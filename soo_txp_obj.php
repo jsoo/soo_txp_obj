@@ -119,7 +119,7 @@ abstract class Soo_Txp_Data extends Soo_Obj {
 	}
 	
 	function where_in( $column, $list, $join = '', $in = true ) {
-		$in = $in ? ' in (' : ' not in (';
+		$in = ( $in ? '' : ' not' ) . ' in (';
 		if ( is_string($list) ) $list = do_list($list);
 		$join = $this->andor($join);
 		$this->where[] = ( $join ? $join . ' ' : '' ) . $column . 
