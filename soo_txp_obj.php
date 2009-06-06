@@ -152,9 +152,13 @@ abstract class Soo_Obj {
 // Root class for all Soo_Txp_* classes
 // low-level utility methods
 
+	protected $data			= array();
+	
 	public function __get( $property ) {
 		if ( in_array($property, $this->property_names()) )
 			return $this->$property;
+		elseif ( array_key_exists($property, $this->data) )
+			return $this->data[$property];
 		else
 			return null;
 	}
@@ -165,16 +169,16 @@ abstract class Soo_Obj {
 		
 		if ( $to_set == $request ) {
 			echo $request . '(): method not defined<br />';
+			return;
+		}
+		if ( isset($this->$to_set) ) {
+			$this->$to_set = array_pop($args);
 			return $this;
 		}
-		if ( ! isset($this->$to_set) ) {
-			echo $to_set . ': no such property<br />';
+		else {
+			$this->$data[$to_set] = array_pop($args);
 			return $this;
-		}
-		
-		$this->$to_set = array_pop($args);
-		return $this;
-	
+		}		
 	}
 	
 	public function __toString() {
@@ -362,79 +366,41 @@ abstract class Soo_Txp_Data extends Soo_Obj {
 	public function count() {
 		return getCount($this->from, $this->clause_string());
 	}
-		
-	protected function load_properties($r) {
-	// automatically set each object property whose name matches that
-	// of one of the input record's data fields
-		if ( is_array($r) ) extract($r);
-		foreach ( $this as $property => $value )
-		
-			if ( isset($$property) ) {
-				if ( $property == 'date' )
-					$$property = strtotime($$property);
-				$set_method = 'set_' . $property;
-				$this->$set_method($$property);
-			}
+	
+	protected function retrieve( $key, $value ) {
+		if ( ! $key or ! $value )
+			return;
+		if ( is_numeric($value) )
+			$this->where($key, intval($value));
+		elseif ( is_string($value) )
+			$this->where($key, doSlash($value))->limit(1);
+		else
+			return false;
+		$this->load_properties();
+	}
+	
+	protected function load_properties( $r = null ) {
+	// retrieve row if necessary; load record into $this->data
+		if ( ! $r )
+			$r = $this->row();
+		if ( ! is_array($r) ) return;
+		foreach ( $r as $k => $v )
+			if ( $k == 'date' )
+				$r[$k] = strtotime($v);
+		$this->set_data($r);
+	}
+	
+	public function properties( ) {
+		return $this->data;
 	}
 
 }	
 ////////////////////// end of class Soo_Txp_Data ///////////////////////////
 
 class Soo_Txp_Article extends Soo_Txp_Data {
-		
-	protected $ID				= '';
-	protected $Posted			= '';
-	protected $Expires			= '';
-	protected $AuthorID			= '';
-	protected $LastMod			= '';
-	protected $LastModID		= '';
-	protected $Title			= '';
-	protected $Title_html		= '';
-	protected $Body				= '';
-	protected $Body_html		= '';
-	protected $Excerpt			= '';
-	protected $Excerpt_html		= '';
-	protected $Image			= '';
-	protected $Category1		= '';
-	protected $Category2		= '';
-	protected $Annotate			= '';
-	protected $AnnotateInvite	= '';
-	protected $comments_count	= '';
-	protected $Status			= '';
-	protected $textile_body		= '';
-	protected $textile_excerpt	= '';
-	protected $Section			= '';
-	protected $override_form	= '';
-	protected $Keywords			= '';
-	protected $url_title		= '';
-	protected $custom_1			= '';
-	protected $custom_2			= '';
-	protected $custom_3			= '';
-	protected $custom_4			= '';
-	protected $custom_5			= '';
-	protected $custom_6			= '';
-	protected $custom_7			= '';
-	protected $custom_8			= '';
-	protected $custom_9			= '';
-	protected $custom_10		= '';
-	protected $uid				= '';
-	protected $feed_time		= '';
-	
+			
 	function __construct( $id = '') {
-		if ( $id )
-			$this->retrieve_by_id($id);
-		return $this;
-	}
-		
-	private function retrieve_article() {
-		$r = $this->row();
-		if ( $r ) $this->load_properties($r);
-		return $this;
-	}
-	
-	private function retrieve_by_id( $id ) {
-		if ( is_numeric($id) )
-			$this->where('ID', intval($id))->retrieve_article();
+		$this->retrieve('ID', $id);
 		return $this;
 	}
 	
@@ -443,38 +409,12 @@ class Soo_Txp_Article extends Soo_Txp_Data {
 
 class Soo_Txp_File extends Soo_Txp_Data {
 
-	protected $id				= '';
-	protected $filename			= '';
-	protected $category			= '';
-	protected $permissions		= '';
-	protected $description		= '';
-	protected $downloads		= '';
-	protected $status			= '';
-	protected $modified			= '';
-	protected $created			= '';
-	protected $size				= '';
-
-	function __construct( $id = '') {
+	function __construct( $key = '') {
 		$this->from = 'txp_file';
-		if ( $id )
-			$this->retrieve_by_id($id);
-	}
-		
-	private function retrieve_file() {
-		$r = $this->row();
-		if ( $r ) $this->load_properties($r);
-		return $this;
-	}
-	
-	private function retrieve_by_id( $id ) {
-		if ( is_numeric($id) )
-			$this->where('id', intval($id))->retrieve_file();
-		return $this;
-	}
-	
-	private function retrieve_by_filename( $filename ) {
-		$this->where('filename', doSlash($filename))->retrieve_file();
-		return $this;
+		if ( is_numeric($key) )
+			$this->retrieve('id', $key);
+		else
+			$this->retrieve('filename', $key);
 	}
 
 }
@@ -482,27 +422,11 @@ class Soo_Txp_File extends Soo_Txp_Data {
 
 class Soo_Txp_Form extends Soo_Txp_Data {
 	
-	protected $name			= '';
-	protected $type			= '';
-	protected $Form			= '';
-	
 	function __construct( $name = '') {
 		$this->from = 'txp_form';
-		if ( $name )
-			$this->retrieve_by_name($name);
+		$this->retrieve('name', $name);
 	}
 		
-	private function retrieve_form() {
-		$r = $this->row();
-		if ( $r ) $this->load_properties($r);
-		return $this;
-	}
-	
-	private function retrieve_by_name( $name ) {
-		$this->where('name', doSlash($name))->retrieve_form();
-		return $this;
-	}
-	
 }
 ////////////////////// End of class Soo_Txp_Form ///////////////////////////
 
@@ -510,46 +434,17 @@ class Soo_Txp_Img extends Soo_Txp_Data {
 // Database object for Textpattern images
 // No setter methods because these properties are inherent to the image;
 // adjustments for display should be made on the HTML side (Soo_Txp_Img)
-	
-	protected $id			= '';
-	protected $name			= '';
-	protected $category		= '';
-	protected $ext			= '';
-	protected $h			= '';
-	protected $w			= '';
-	protected $alt			= '';
-	protected $caption		= '';
-	protected $date			= '';
-	protected $author		= '';
-	protected $thumbnail	= '';
-		
+			
 	function __construct( $input = null) {
 		$this->from = 'txp_image';
 		if ( is_numeric($input) )
-			$this->retrieve_by_id($input);
+			$this->retrieve('id', $input);
+		elseif ( is_string($input) )
+			$this->retrieve('name', $input);
 		elseif ( is_array($input) )
 			$this->load_properties($input);
 	}
-	
-	// Database retrieval
-		
-	private function retrieve_image() {
-		$r = $this->row();
-		if ( $r ) $this->load_properties($r);
-		return $this;
-	}
-	
-	private function retrieve_by_id( $id ) {
-		if ( is_numeric($id) )
-			$this->where('id', intval($id))->retrieve_image();
-		return $this;
-	}
-	
-	private function retrieve_by_name( $name ) {
-		$this->where('name', doSlash($name))->limit(1)->retrieve_image();
-		return $this;
-	}
-		
+			
 	// Utilities /////////////////////////////////////
 	
 	public function full_url() {
@@ -562,32 +457,9 @@ class Soo_Txp_Img extends Soo_Txp_Data {
 
 class Soo_Txp_Plugin extends Soo_Txp_Data {
 	
-	protected $name				= '';
-	protected $status			= '';
-	protected $author			= '';
-	protected $author_uri		= '';
-	protected $version			= '';
-	protected $description		= '';
-	protected $help				= '';
-	protected $code				= '';
-	protected $type				= '';
-	protected $load_order		= '';
-	
 	function __construct( $name = '') {
 		$this->from = 'txp_plugin';
-		if ( $name )
-			$this->retrieve_by_name($name);
-	}
-		
-	private function retrieve_plugin() {
-		$r = $this->row();
-		if ( $r ) $this->load_properties($r);
-		return $this;
-	}
-	
-	private function retrieve_by_name( $name ) {
-		$this->where('name', doSlash($name))->limit(1)->retrieve_plugin();
-		return $this;
+		$this->retrieve('name', $name);
 	}
 		
 }
@@ -595,29 +467,9 @@ class Soo_Txp_Plugin extends Soo_Txp_Data {
 
 class Soo_Txp_Prefs extends Soo_Txp_Data {
 	
-	protected $prefs_id			= '';
-	protected $name				= '';
-	protected $val				= '';
-	protected $type				= '';
-	protected $event			= '';
-	protected $html				= '';
-	protected $position			= '';
-	
 	function __construct( $name = '') {
 		$this->from = 'txp_prefs';
-		if ( $name )
-			$this->retrieve_by_name($name);
-	}
-		
-	private function retrieve_prefs() {
-		$r = $this->row();
-		if ( $r ) $this->load_properties($r);
-		return $this;
-	}
-	
-	private function retrieve_by_name( $name ) {
-		$this->where('name', doSlash($name))->retrieve_prefs();
-		return $this;
+		$this->retrieve('name', $name);
 	}
 		
 }
@@ -625,7 +477,7 @@ class Soo_Txp_Prefs extends Soo_Txp_Data {
 
 abstract class Soo_Html extends Soo_Obj {
 // HTML element class. Instantiation takes a required 'name' argument and an
-// optional 'object' argument: properties whose name match HTML attributes 
+// optional 'atts' array: items with keys matching HTML attributes 
 // will be transferred to the new object.
 // 
 // See the Soo_Html_Img class for an example of how to extend this class.
