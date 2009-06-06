@@ -18,19 +18,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-// $plugin['name'] = '';		// If unset, name extracted from file name.
 $plugin['version'] = '1.0.a.6';
 $plugin['author'] = 'Jeff Soo';
 $plugin['author_uri'] = 'http://ipsedixit.net/';
 $plugin['description'] = 'Object classes for Txp plugins';
-
-// Plugin types:
-// 0 = regular plugin; loaded on the public web side only
-// 1 = admin plugin; loaded on both the public and admin side
-// 2 = library; loaded only when include_plugin() or require_plugin() is called
 $plugin['type'] = 2; 
-
 
 @include_once('zem_tpl.php');
 
