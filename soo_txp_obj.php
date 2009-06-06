@@ -242,6 +242,10 @@ abstract class Soo_Txp_Data extends Soo_Obj {
 		return $this;
 	}
 	
+	function where_not_in( $column, $list, $join = '' ) {
+		return $this->where_in( $column , $list , $join , false );
+	}
+	
 	function where_regexp( $pattern, $subject, $join = '' ) {
 		$join = $this->andor($join);
 		$this->where[] = ( $join ? $join . ' ' : '' ) . 
