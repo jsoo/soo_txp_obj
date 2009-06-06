@@ -26,121 +26,6 @@ $plugin['type'] = 2;
 
 @include_once('zem_tpl.php');
 
-if (0) {
-?>
-<!-- CSS & HELP
-# --- BEGIN PLUGIN CSS ---
-<style type="text/css">
-div#sed_help pre {padding: 0.5em 1em; background: #eee; border: 1px dashed #ccc;}
-div#sed_help h1, div#sed_help h2, div#sed_help h3, div#sed_help h3 code {font-family: sans-serif; font-weight: bold;}
-div#sed_help h1, div#sed_help h2, div#sed_help h3 {margin-left: -1em;}
-div#sed_help h2, div#sed_help h3 {margin-top: 2em;}
-div#sed_help h1 {font-size: 2.4em;}
-div#sed_help h2 {font-size: 1.8em;}
-div#sed_help h3 {font-size: 1.4em;}
-div#sed_help h4 {font-size: 1.2em;}
-div#sed_help h5 {font-size: 1em;margin-left:1em;font-style:oblique;}
-div#sed_help ul li {list-style-type: disc;}
-div#sed_help ul li li {list-style-type: circle;}
-div#sed_help ul li li li {list-style-type: square;}
-div#sed_help li a code {font-weight: normal;}
-div#sed_help li code:first-child {background: #ddd;padding:0 .3em;margin-left:-.3em;}
-div#sed_help li li code:first-child {background:none;padding:0;margin-left:0;}
-div#sed_help dfn {font-weight:bold;font-style:oblique;}
-div#sed_help .required, div#sed_help .warning {color:red;}
-div#sed_help .default {color:green;}
-div#sed_help sup {line-height:0;}
-</style>
-# --- END PLUGIN CSS ---
-# --- BEGIN PLUGIN HELP ---
- <div id="sed_help">
-
-h1. soo_txp_obj
-
-h2(#overview). Overview
-
-*soo_txp_obj* is a library for creating Textpattern plugins. It has classes for Textpattern objects (queries and data) and HTML objects (HTML elements).
-
-The design of the library aims for strict separation of data retrieval and HTML output. Of course boundaries do blur and you have to do what works, but a little extra time figuring out how to work with the model rather than around it can pay dividends.
-
-*soo_txp_obj* is still an alpha release. It is possible that future releases will not be entirely backward-compatible with this one.
-
-Suggestions and corrections gladly accepted. "Email the author &rarr;":http://ipsedixit.net/info/2/contact
-
-This is a very minimal guide: there are too many classes for that (and most of them are quite easy to figure out). More information and examples are available "here":http://ipsedixit.net/txp/21/soo-txp-obj.
-
-h3. Classes
-
-All the classes are extensions of the very simple *Soo_Obj* base class. Most of the classes fall into two families: data classes and HTML output classes. There is also a support class, Soo_Txp_Uri, mainly for handling URI query strings.
-
-h4. Soo_Obj
-
-Super-parent abstract base class, with no properties and just a few low-level methods. Has @__get()@ as a generic getter, and a @__call()@ which will work as a generic setter for calls in the form @set_property($value)@, replacing "property" with an existing property name.
-
-h4. Soo_Txp_Data
-
-This is the abstract base class for building queries and retrieving records from the Txp database. The class has been extended for several Txp tables, and it is easy to extend it to cover any table you need to work with.
-
-h4. Soo_Html
-
-This is the abstract base class for building HTML tags. As with *Soo_Txp_Data*, it is easy to extend if the HTML element you need doesn't have its own class yet.
-
-h4. Soo_Txp_Uri
-
-Intended for dealing with query string parameters, allowing you to set, add, or delete specific parameters while preserving the rest. Note that using this class to set parameters will also reset @$_SERVER['REQUEST_URI']@ and @$_SERVER['QUERY_STRING']@, while leaving the @$_GET@ and @$_POST@ arrays untouched.
-
-h3. _soo_echo()
-
-A bonus function (not attached to any class) for development. Feed it a variable and it will @echo()@ it, whether it is a simple string or number, an array, or an object -- or even a multi-dimensional array of objects or an object containing multi-dimensional arrays -- you get the idea. Different from the native @var_dump()@ function in that the format is easier to read in a standard browser window, and suppresses empty items by default.
-
-h2. Version history
-
-h3. 1.0.a.6
-
-6/2/2009
-
-What the heck, time to use the same naming convention I'm using with other plugins.
-
-* Added *Soo_Txp_Uri* class, for URI query string manipulation
-* *Soo_Html_P* and *Soo_Html_Th* can now have contents set during instantiation. Note that this will break compatibility with some previous uses, e.g. @new Soo_Html_P($atts)@.
-* Added @$in@ argument to @where_in()@ method (*Soo_Txp_Data*) to allow "NOT IN" queries
-
-h3. 1.0.a5
-
-5/13/2009
-
-* Corrected SQL syntax in @order_by_field()@ function of @Soo_Txp_Data@ class
-* Modified @tag()@ function of @Soo_Html@ class to handle a PHP 5.2.0 bug
-
-h3. 1.0.a4
-
-5/1/2009
-
-Added @count()@ and @field()@ methods to the abstract @Soo_Txp_Data@ class.
-
-h3. 1.0.a3
-
-2/19/2009
-
-Added "Expires" property to @Soo_Txp_Article@ and "load_order" property to @Soo_Txp_Plugin@. These fields were added in Textpattern version 4.0.7.
-
-h3. 1.0.a2
-
-2/5/2009
-
-No significant changes, but added generic getters and setters (thanks to *jm* for the hint), making the file about 35% smaller.
-
-h3. 1.0.a1
-
-2/4/2009
-
-
- </div>
-# --- END PLUGIN HELP ---
--->
-<?php
-}
-
 # --- BEGIN PLUGIN CODE ---
 
 
@@ -979,4 +864,118 @@ function _soo_echo( $item, $show_empty_props = false, $prefix = '&nbsp;' ) {
 
 # --- END PLUGIN CODE ---
 
+if (0) {
+?>
+<!-- CSS & HELP
+# --- BEGIN PLUGIN CSS ---
+<style type="text/css">
+div#sed_help pre {padding: 0.5em 1em; background: #eee; border: 1px dashed #ccc;}
+div#sed_help h1, div#sed_help h2, div#sed_help h3, div#sed_help h3 code {font-family: sans-serif; font-weight: bold;}
+div#sed_help h1, div#sed_help h2, div#sed_help h3 {margin-left: -1em;}
+div#sed_help h2, div#sed_help h3 {margin-top: 2em;}
+div#sed_help h1 {font-size: 2.4em;}
+div#sed_help h2 {font-size: 1.8em;}
+div#sed_help h3 {font-size: 1.4em;}
+div#sed_help h4 {font-size: 1.2em;}
+div#sed_help h5 {font-size: 1em;margin-left:1em;font-style:oblique;}
+div#sed_help ul li {list-style-type: disc;}
+div#sed_help ul li li {list-style-type: circle;}
+div#sed_help ul li li li {list-style-type: square;}
+div#sed_help li a code {font-weight: normal;}
+div#sed_help li code:first-child {background: #ddd;padding:0 .3em;margin-left:-.3em;}
+div#sed_help li li code:first-child {background:none;padding:0;margin-left:0;}
+div#sed_help dfn {font-weight:bold;font-style:oblique;}
+div#sed_help .required, div#sed_help .warning {color:red;}
+div#sed_help .default {color:green;}
+div#sed_help sup {line-height:0;}
+</style>
+# --- END PLUGIN CSS ---
+# --- BEGIN PLUGIN HELP ---
+ <div id="sed_help">
+
+h1. soo_txp_obj
+
+h2(#overview). Overview
+
+*soo_txp_obj* is a library for creating Textpattern plugins. It has classes for Textpattern objects (queries and data) and HTML objects (HTML elements).
+
+The design of the library aims for strict separation of data retrieval and HTML output. Of course boundaries do blur and you have to do what works, but a little extra time figuring out how to work with the model rather than around it can pay dividends.
+
+*soo_txp_obj* is still an alpha release. It is possible that future releases will not be entirely backward-compatible with this one.
+
+Suggestions and corrections gladly accepted. "Email the author &rarr;":http://ipsedixit.net/info/2/contact
+
+This is a very minimal guide: there are too many classes for that (and most of them are quite easy to figure out). More information and examples are available "here":http://ipsedixit.net/txp/21/soo-txp-obj.
+
+h3. Classes
+
+All the classes are extensions of the very simple *Soo_Obj* base class. Most of the classes fall into two families: data classes and HTML output classes. There is also a support class, Soo_Txp_Uri, mainly for handling URI query strings.
+
+h4. Soo_Obj
+
+Super-parent abstract base class, with no properties and just a few low-level methods. Has @__get()@ as a generic getter, and a @__call()@ which will work as a generic setter for calls in the form @set_property($value)@, replacing "property" with an existing property name.
+
+h4. Soo_Txp_Data
+
+This is the abstract base class for building queries and retrieving records from the Txp database. The class has been extended for several Txp tables, and it is easy to extend it to cover any table you need to work with.
+
+h4. Soo_Html
+
+This is the abstract base class for building HTML tags. As with *Soo_Txp_Data*, it is easy to extend if the HTML element you need doesn't have its own class yet.
+
+h4. Soo_Txp_Uri
+
+Intended for dealing with query string parameters, allowing you to set, add, or delete specific parameters while preserving the rest. Note that using this class to set parameters will also reset @$_SERVER['REQUEST_URI']@ and @$_SERVER['QUERY_STRING']@, while leaving the @$_GET@ and @$_POST@ arrays untouched.
+
+h3. _soo_echo()
+
+A bonus function (not attached to any class) for development. Feed it a variable and it will @echo()@ it, whether it is a simple string or number, an array, or an object -- or even a multi-dimensional array of objects or an object containing multi-dimensional arrays -- you get the idea. Different from the native @var_dump()@ function in that the format is easier to read in a standard browser window, and suppresses empty items by default.
+
+h2. Version history
+
+h3. 1.0.a.6
+
+6/2/2009
+
+What the heck, time to use the same naming convention I'm using with other plugins.
+
+* Added *Soo_Txp_Uri* class, for URI query string manipulation
+* *Soo_Html_P* and *Soo_Html_Th* can now have contents set during instantiation. Note that this will break compatibility with some previous uses, e.g. @new Soo_Html_P($atts)@.
+* Added @$in@ argument to @where_in()@ method (*Soo_Txp_Data*) to allow "NOT IN" queries
+
+h3. 1.0.a5
+
+5/13/2009
+
+* Corrected SQL syntax in @order_by_field()@ function of @Soo_Txp_Data@ class
+* Modified @tag()@ function of @Soo_Html@ class to handle a PHP 5.2.0 bug
+
+h3. 1.0.a4
+
+5/1/2009
+
+Added @count()@ and @field()@ methods to the abstract @Soo_Txp_Data@ class.
+
+h3. 1.0.a3
+
+2/19/2009
+
+Added "Expires" property to @Soo_Txp_Article@ and "load_order" property to @Soo_Txp_Plugin@. These fields were added in Textpattern version 4.0.7.
+
+h3. 1.0.a2
+
+2/5/2009
+
+No significant changes, but added generic getters and setters (thanks to *jm* for the hint), making the file about 35% smaller.
+
+h3. 1.0.a1
+
+2/4/2009
+
+
+ </div>
+# --- END PLUGIN HELP ---
+-->
+<?php
+}
 ?>
