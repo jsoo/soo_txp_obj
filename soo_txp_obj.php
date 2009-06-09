@@ -99,16 +99,16 @@ abstract class Soo_Txp_Data extends Soo_Obj {
 	
 	function where( $column, $value, $operator = '=', $join = '' ) {
 		$join = $this->andor($join);
-		$this->where[] = ( $join ? $join . ' `' : '`' ) . 
-			$column . '` ' . $operator . " '" . $value . "'";
+		$this->where[] = ( $join ? $join . ' ' : '' ) . 
+			$column . ' ' . $operator . " '" . $value . "'";
 		return $this;
 	}
 	
 	function in( $column, $list, $join = '', $in = true ) {
-		$in = ( $in ? '`' : '` not' ) . ' in (';
+		$in = ( $in ? '' : ' not' ) . ' in (';
 		if ( is_string($list) ) $list = do_list($list);
 		$join = $this->andor($join);
-		$this->where[] = ( $join ? $join . ' `' : '`' ) . $column . 
+		$this->where[] = ( $join ? $join . ' ' : '' ) . $column . 
 			$in . implode(',', quote_list(doSlash($list))) . ')';
 		return $this;
 	}
@@ -756,7 +756,7 @@ class Soo_Html_Span extends Soo_Html {
 }
 /////////////////////// end of class Soo_Html_Span ////////////////////////////
 
-class Soo_Txp_Uri extends Soo_Obj {
+class Soo_Uri extends Soo_Obj {
 	
 	protected $full;
 	protected $request_uri;
