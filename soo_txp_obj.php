@@ -40,28 +40,18 @@ abstract class Soo_Obj {
 	protected $data			= array();
 	
 	public function __get( $property ) {
-		if ( in_array($property, $this->property_names()) )
-			return $this->$property;
-		elseif ( array_key_exists($property, $this->data) )
-			return $this->data[$property];
-		else
-			return null;
+		return isset($this->$property) ? $this->$property :
+			( isset($this->data[$property]) ? $this->data[$property] : null );
 	}
 	
 	public function __call( $request, $args ) {
 	
-		$to_set = str_replace('set_', '', $request);
-		
-		if ( $to_set == $request ) {
-			echo $request . '(): method not defined<br />';
-			return;
-		}
-		if ( isset($this->$to_set) ) {
-			$this->$to_set = array_pop($args);
+		if ( isset($this->$request) ) {
+			$this->$request = array_pop($args);
 			return $this;
 		}
 		else {
-			$this->$data[$to_set] = array_pop($args);
+			$this->data[$request] = array_pop($args);
 			return $this;
 		}		
 	}
@@ -276,7 +266,7 @@ abstract class Soo_Txp_Data extends Soo_Obj {
 		foreach ( $r as $k => $v )
 			if ( $k == 'date' )
 				$r[$k] = strtotime($v);
-		$this->set_data($r);
+		$this->data($r);
 	}
 	
 	public function properties( ) {
@@ -415,7 +405,7 @@ abstract class Soo_Html extends Soo_Obj {
 		return $this;
 	}
 	
-	public function set_contents($content) {
+	public function contents($content) {
 		if ( !$this->is_empty )
 			$this->contents[] = $content; // needs validation routine
 		return $this;
@@ -491,10 +481,10 @@ class Soo_Html_Anchor extends Soo_Html {
 			
 		parent::__construct( 'a', $atts );
 		
-		return $this->set_is_empty(false)
-			->set_is_block(false)
-			->set_can_contain(array())
-			->set_href($url);
+		return $this->is_empty(false)
+			->is_block(false)
+			->can_contain(array())
+			->href($url);
 	}
 	
 }
@@ -503,8 +493,8 @@ class Soo_Html_Anchor extends Soo_Html {
 class Soo_Html_Br extends Soo_Html {
 	public function __construct ( $atts = array() ) {
 		parent::__construct( 'br', $atts );
-		return $this->set_is_empty(true)
-			->set_is_block(false);
+		return $this->is_empty(true)
+			->is_block(false);
 	}
 }
 
@@ -536,9 +526,9 @@ class Soo_Html_Img extends Soo_Html {
 		
 		parent::__construct('img', $a);
 		
-		$this->set_is_empty(true)
-			->set_is_block(false)
-			->set_can_contain(array());
+		$this->is_empty(true)
+			->is_block(false)
+			->can_contain(array());
 		
 		if ( $escape )
 			$this->html_escape('title')->html_escape('alt');
@@ -553,12 +543,12 @@ class Soo_Html_P extends Soo_Html {
 	public function __construct ( $contents = '', $atts = array() ) {
 		parent::__construct('p', $atts);
 		
-		$this->set_is_empty(false)
-			->set_is_block(true)
-			->set_can_contain(array('inline'));
+		$this->is_empty(false)
+			->is_block(true)
+			->can_contain(array('inline'));
 			
 		if ( $contents )
-			$this->set_contents($contents);
+			$this->contents($contents);
 	}
 }
 /////////////////////// end of class Soo_Html_P ////////////////////////////
@@ -577,9 +567,9 @@ class Soo_Html_Table extends Soo_Html {
 			
 		parent::__construct( 'table', $atts );
 		
-		$this->set_is_empty(false)
-			->set_is_block(true)
-			->set_can_contain(array('caption', 'col', 'colgroup', 
+		$this->is_empty(false)
+			->is_block(true)
+			->can_contain(array('caption', 'col', 'colgroup', 
 				'thead', 'tfoot', 'tbody'));
 			// can also contain tr if only one tbody and no tfoot or thead;
 
@@ -599,8 +589,8 @@ abstract class Soo_Html_Table_Component extends Soo_Html {
 			
 		parent::__construct( $component, $atts );
 		
-		$this->set_is_empty(false)
-			->set_is_block(true);
+		$this->is_empty(false)
+			->is_block(true);
 	}
 	
 }
@@ -612,7 +602,7 @@ class Soo_Html_Thead extends Soo_Html_Table_Component {
 			
 		parent::__construct( 'thead', $atts );
 		
-		$this->set_can_contain(array('tr'));
+		$this->can_contain(array('tr'));
 	}
 	
 }
@@ -624,7 +614,7 @@ class Soo_Html_Tbody extends Soo_Html_Table_Component {
 			
 		parent::__construct( 'tbody', $atts );
 		
-		$this->set_can_contain(array('tr'));
+		$this->can_contain(array('tr'));
 	}
 	
 }
@@ -636,7 +626,7 @@ class Soo_Html_Tfoot extends Soo_Html_Table_Component {
 			
 		parent::__construct( 'tfoot', $atts );
 		
-		$this->set_can_contain(array('tr'));
+		$this->can_contain(array('tr'));
 	}
 	
 }
@@ -648,7 +638,7 @@ class Soo_Html_Tr extends Soo_Html_Table_Component {
 			
 		parent::__construct( 'tr', $atts );
 		
-		$this->set_can_contain(array('th', 'td'));
+		$this->can_contain(array('th', 'td'));
 	}
 	
 }
@@ -667,7 +657,7 @@ abstract class Soo_Html_Table_Cell extends Soo_Html_Table_Component {
 			
 		parent::__construct( $cell_type, $atts );
 		
-// 		$this->set_can_contain(array('caption', 'col', 'colgroup', 
+// 		$this->can_contain(array('caption', 'col', 'colgroup', 
 // 				'thead', 'tfoot', 'tbody'));
 	}
 	
@@ -680,7 +670,7 @@ class Soo_Html_Th extends Soo_Html_Table_Cell {
 			
 		parent::__construct( 'th', $atts );
 		
-		if ( $contents ) $this->set_contents($contents);
+		if ( $contents ) $this->contents($contents);
 		
 		return $this;
 		
@@ -695,7 +685,7 @@ class Soo_Html_Td extends Soo_Html_Table_Cell {
 			
 		parent::__construct( 'td', $atts );
 		
-		if ( $contents ) $this->set_contents($contents);
+		if ( $contents ) $this->contents($contents);
 		
 		return $this;
 		
@@ -710,9 +700,9 @@ class Soo_Html_Ol extends Soo_Html {
 			
 		parent::__construct( 'ol', $atts );
 		
-		$this->set_is_empty(false)
-			->set_is_block(true);
-			//->set_can_contain(array('li'));
+		$this->is_empty(false)
+			->is_block(true);
+			//->can_contain(array('li'));
 	}
 	
 
@@ -725,9 +715,9 @@ class Soo_Html_Ul extends Soo_Html {
 			
 		parent::__construct( 'ul', $atts );
 		
-		$this->set_is_empty(false)
-			->set_is_block(true);
-			//->set_can_contain(array('li'));
+		$this->is_empty(false)
+			->is_block(true);
+			//->can_contain(array('li'));
 	}
 	
 
@@ -740,13 +730,13 @@ class Soo_Html_Li extends Soo_Html {
 			
 		parent::__construct( 'li', $atts );
 		
-		$this->set_is_empty(false)
-			->set_is_block(true);
-			//->set_can_contain(array('ol', 'ul'));	
+		$this->is_empty(false)
+			->is_block(true);
+			//->can_contain(array('ol', 'ul'));	
 			// actually can contain almost anything other than li
 		
 		if ( $contents )
-			$this->set_contents($contents);
+			$this->contents($contents);
 	}
 	
 
@@ -759,11 +749,11 @@ class Soo_Html_Span extends Soo_Html {
 			
 		parent::__construct( 'span', $atts );
 		
-		$this->set_is_empty(false)
-			->set_is_block(false);
+		$this->is_empty(false)
+			->is_block(false);
 		
 		if ( $contents )
-			$this->set_contents($contents);
+			$this->contents($contents);
 	}
 	
 
