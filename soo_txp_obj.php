@@ -794,9 +794,7 @@ class Soo_Uri extends Soo_Obj {
 	}
 	
 	private function update_from_params ( ) {
-		foreach ( $this->query_params as $k => $v )
-			$kv_pairs[] = "$k=$v";
-		$this->query_string = isset($kv_pairs) ? implode('&', $kv_pairs) : '';
+		$this->query_string = http_build_query($this->query_params);
 		$this->request_uri = self::strip_query($this->request_uri) . 
 			( $this->query_string ? '?' . $this->query_string : '' );
 		$this->full = preg_replace('/\/$/', '', hu) . $this->request_uri;
