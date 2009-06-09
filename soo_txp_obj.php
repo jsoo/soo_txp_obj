@@ -767,23 +767,13 @@ class Soo_Uri extends Soo_Obj {
 		$this->request_uri = $_SERVER['REQUEST_URI'];
 		$this->query_string = $_SERVER['QUERY_STRING'];
 		$this->full = preg_replace('/\/$/', '', hu) . $this->request_uri;
-		$this->set_query_params();
+		$this->query_params = $_GET;
 	}
 	
 	public function __call( $request, $args ) {
 		return false;
 	}
-	
-	private function set_query_params ( ) {
-		$this->query_params = array();
-		if ( $this->query_string )
-			foreach ( explode('&', urldecode($this->query_string)) as $chunk ) {
-				list($k, $v) = explode('=', $chunk);
-				$this->query_params[$k] = $v;
-			}
-		return $this;
-	}
-	
+		
 	public function set_query_param ( $name, $value = null ) {
 		if ( is_null($value) )
 			unset($this->query_params[$name]);
