@@ -45,15 +45,11 @@ abstract class Soo_Obj {
 	}
 	
 	public function __call( $request, $args ) {
-	
-		if ( isset($this->$request) ) {
+		if ( isset($this->$request) )
 			$this->$request = array_pop($args);
-			return $this;
-		}
-		else {
+		else
 			$this->data[$request] = array_pop($args);
-			return $this;
-		}		
+		return $this;
 	}
 	
 	public function __toString() {
