@@ -88,7 +88,7 @@ abstract class Soo_Txp_Data extends Soo_Obj {
 	
 	function select( $list = '*' ) {
 		if ( is_string($list) ) $list = do_list($list);
-		foreach ( $list as $col ) $this->select[] = $col;
+		foreach ( $list as $col ) $this->select[] = self::quote($col);
 		return $this;
 	}
 	
@@ -100,7 +100,7 @@ abstract class Soo_Txp_Data extends Soo_Obj {
 	function where( $column, $value, $operator = '=', $join = '' ) {
 		$join = $this->andor($join);
 		$this->where[] = ( $join ? $join . ' ' : '' ) . 
-			$column . ' ' . $operator . " '" . $value . "'";
+			self::quote($column) . ' ' . $operator . " '" . $value . "'";
 		return $this;
 	}
 	
@@ -108,7 +108,7 @@ abstract class Soo_Txp_Data extends Soo_Obj {
 		$in = ( $in ? '' : ' not' ) . ' in (';
 		if ( is_string($list) ) $list = do_list($list);
 		$join = $this->andor($join);
-		$this->where[] = ( $join ? $join . ' ' : '' ) . $column . 
+		$this->where[] = ( $join ? $join . ' ' : '' ) . self::quote($column) . 
 			$in . implode(',', quote_list(doSlash($list))) . ')';
 		return $this;
 	}
@@ -120,7 +120,7 @@ abstract class Soo_Txp_Data extends Soo_Obj {
 	function regexp( $pattern, $subject, $join = '' ) {
 		$join = $this->andor($join);
 		$this->where[] = ( $join ? $join . ' ' : '' ) . 
-			$subject . " regexp '" . $pattern . "'";
+			self::quote($subject) . " regexp '" . $pattern . "'";
 		return $this;
 	}
 	
@@ -128,6 +128,12 @@ abstract class Soo_Txp_Data extends Soo_Obj {
 		$join = strtolower($join);
 		return count($this->where) ? 
 			( in_list($join, 'and,or') ? $join : 'and' ) : '';
+	}
+	
+	private function quote( $identifier ) {
+	// quote with backticks only if $identifier consists only of alphanumerics, $, or _
+		return preg_match('/^[a-z_$\d]+$/i', $identifier) ?
+			'`' . $identifier . '`' : $identifier;
 	}
 		
 	function order_by( $expr, $direction = '' ) {
@@ -797,7 +803,7 @@ class Soo_Uri extends Soo_Obj {
 	}
 
 }
-/////////////////////// end of class Soo_Txp_Uri ////////////////////////////
+/////////////////////// end of class Soo_Uri ////////////////////////////
 
   //---------------------------------------------------------------------//
  //							Support Functions							//
