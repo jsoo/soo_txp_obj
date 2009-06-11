@@ -37,8 +37,6 @@ abstract class Soo_Obj {
 // Root class for all Soo_Txp_* classes
 // low-level utility methods
 
-	protected $data			= array();
-	
 	public function __get( $property ) {
 		return isset($this->$property) ? $this->$property :
 			( isset($this->data[$property]) ? $this->data[$property] : null );
@@ -47,7 +45,7 @@ abstract class Soo_Obj {
 	public function __call( $request, $args ) {
 		if ( isset($this->$request) )
 			$this->$request = array_pop($args);
-		else
+		elseif ( isset($this->data) )
 			$this->data[$request] = array_pop($args);
 		return $this;
 	}
@@ -85,7 +83,9 @@ abstract class Soo_Txp_Data extends Soo_Obj {
 	protected $order_by		= array();
 	protected $limit		= 0;
 	protected $offset		= 0;
-	
+
+	protected $data			= array();
+		
 	function select( $list = '*' ) {
 		if ( is_string($list) ) $list = do_list($list);
 		foreach ( $list as $col ) $this->select[] = self::quote($col);
