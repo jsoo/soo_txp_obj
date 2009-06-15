@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 // soo_txp_ojb
 //
