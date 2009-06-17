@@ -84,9 +84,8 @@ abstract class Soo_Txp_Data extends Soo_Obj {
 	protected $data			= array();
 	
 	public function __get( $property ) {
-		$out = parent::__get($property);
-		return $out ? $out :
-			( isset($this->data[$property]) ? $this->data[$property] : null );
+		return isset($this->data[$property]) ? $this->data[$property] 
+			: parent::__get($property);
 	}
 	
 	function data( ) {
@@ -294,7 +293,7 @@ class Soo_Txp_Article extends Soo_Txp_Data {
 
 class Soo_Txp_File extends Soo_Txp_Data {
 
-	function __construct( $key = '') {
+	function __construct( $key = '' ) {
 		$this->from = 'txp_file';
 		if ( is_numeric($key) )
 			$this->retrieve('id', $key);
@@ -307,7 +306,7 @@ class Soo_Txp_File extends Soo_Txp_Data {
 
 class Soo_Txp_Form extends Soo_Txp_Data {
 	
-	function __construct( $name = '') {
+	function __construct( $name = '' ) {
 		$this->from = 'txp_form';
 		$this->retrieve('name', $name);
 	}
@@ -316,11 +315,8 @@ class Soo_Txp_Form extends Soo_Txp_Data {
 ////////////////////// End of class Soo_Txp_Form ///////////////////////////
 
 class Soo_Txp_Img extends Soo_Txp_Data {
-// Database object for Textpattern images
-// No setter methods because these properties are inherent to the image;
-// adjustments for display should be made on the HTML side (Soo_Txp_Img)
 			
-	function __construct( $input = null) {
+	function __construct( $input = null ) {
 		$this->from = 'txp_image';
 		if ( is_numeric($input) )
 			$this->retrieve('id', $input);
@@ -330,9 +326,7 @@ class Soo_Txp_Img extends Soo_Txp_Data {
 			$this->load_properties($input);
 	}
 			
-	// Utilities /////////////////////////////////////
-	
-	public function full_url() {
+	function full_url() {
 		global $img_dir;
 		return hu . $img_dir . '/' . $this->id . $this->ext;
 	}
@@ -342,7 +336,7 @@ class Soo_Txp_Img extends Soo_Txp_Data {
 
 class Soo_Txp_Plugin extends Soo_Txp_Data {
 	
-	function __construct( $name = '') {
+	function __construct( $name = '' ) {
 		$this->from = 'txp_plugin';
 		$this->retrieve('name', $name);
 	}
@@ -352,7 +346,7 @@ class Soo_Txp_Plugin extends Soo_Txp_Data {
 
 class Soo_Txp_Prefs extends Soo_Txp_Data {
 	
-	function __construct( $name = '') {
+	function __construct( $name = '' ) {
 		$this->from = 'txp_prefs';
 		$this->retrieve('name', $name);
 	}
