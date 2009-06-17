@@ -70,9 +70,180 @@ abstract class Soo_Obj {
 abstract class Soo_Sql extends Soo_Obj {
 	
 	protected $table		= '';
+	protected $where		= array();
+	protected $order_by		= array();
+	protected $limit		= 0;
+	protected $offset		= 0;
+	
+	function __construct( $table = 'textpattern' ) {
+		$this->table = trim($table);
+	}
+
+	function where( $column, $value, $operator = '=', $join = '' ) {
+		$join = $this->andor($join);
+		$this->where[] = ( $join ? $join . ' ' : '' ) . 
+			self::quote($column) . ' ' . $operator . " '" . $value . "'";
+		return $this;
+	}
+	
+	function in( $column, $list, $join = '', $in = true ) {
+		$in = ( $in ? '' : ' not' ) . ' in (';
+		if ( is_string($list) ) $list = do_list($list);
+		$join = $this->andor($join);
+		$this->where[] = ( $join ? $join . ' ' : '' ) . self::quote($column) . 
+			$in . implode(',', quote_list(doSlash($list))) . ')';
+		return $this;
+	}
+	
+	function not_in( $column, $list, $join = '' ) {
+		return $this->in( $column , $list , $join , false );
+	}
+	
+	function regexp( $pattern, $subject, $join = '' ) {
+		$join = $this->andor($join);
+		$this->where[] = ( $join ? $join . ' ' : '' ) . 
+			self::quote($subject) . " regexp '" . $pattern . "'";
+		return $this;
+	}
+	
+	private function andor( $join = 'and' ) {
+		$join = strtolower($join);
+		return count($this->where) ? 
+			( in_list($join, 'and,or') ? $join : 'and' ) : '';
+	}
+	
+	function quote( $identifier ) {
+	// quote with backticks only if $identifier consists only of alphanumerics, $, or _
+		return preg_match('/^[a-z_$\d]+$/i', $identifier) ?
+			'`' . $identifier . '`' : $identifier;
+	}
+		
+	function order_by( $expr, $direction = '' ) {
+		
+		if ( $expr ) {
+	
+			$expr = do_list(strtolower($expr));
+			
+			foreach ( $expr as $x ) {
+				
+				if ( preg_match('/(\S+)\s+(\S+)/', $x, $match) ) {
+					$column = $match[1];
+					$direction = $match[2];
+				}
+				else
+					$column = $x;
+			
+				if ( $column == 'random' or $column == 'rand' or $column == 'rand()' ) {
+					$column = 'rand()';
+					$direction = '';
+				}
+				else 
+					$direction = in_array($direction, array('asc', 'desc')) ?
+						$direction : '';
+					
+				$this->order_by[] = $column . ( $direction ? ' ' . $direction : '');
+			}
+		}
+		
+		return $this;
+	}
+	
+	function order_by_field( $field, $list ) { // for preserving arbitrary order
+		if ( is_string($list) ) $list = do_list($list);
+		if ( count($list) > 1 )
+			$this->order_by[] = 'field(' . $field . ', ' .
+				implode(', ', quote_list(doSlash($list))) . ')';
+	}
+	
+	function limit( $limit ) {
+		if ( is_numeric($limit) and $limit > 0 )
+			$this->limit = ' limit ' . intval($limit);
+		return $this;
+	}
+	
+	function offset( $offset ) {
+		if ( is_numeric($offset) and $offset > 0 )
+			$this->offset = ' offset ' . intval($offset);
+		return $this;
+	}
+	
+	protected function clause_string() {
+		return implode(' ', $this->where) .
+			( count($this->order_by) ? ' order by ' . implode(', ', $this->order_by) : '' ) .
+			( $this->limit ? $this->limit : '' ) . ( $this->offset ? $this->offset : '' );
+	}
+
+	public function count() {
+		return getCount($this->from, $this->clause_string());
+	}
 	
 }
-////////////////////// end of class Soo_Sql ////////////////////////////////
+////////////////////// end of class Soo_Sql ////////////////////////////
+
+
+class Soo_Select extends Soo_Sql {
+	
+	protected $select		= array();
+	
+	function select( $list = '*' ) {
+		if ( is_string($list) ) $list = do_list($list);
+		foreach ( $list as $col ) $this->select[] = parent::quote($col);
+		return $this;
+	}
+	
+	private function init_query() {
+		if ( ! count($this->select) ) $this->select();
+		if ( ! count($this->where) ) $this->where[] = '1 = 1';
+	}
+	
+	public function row() {
+		$this->init_query();
+		return safe_row(implode(',', $this->select), $this->table, 
+			$this->clause_string());
+	}
+	
+	public function rows() {
+		$this->init_query();
+		return safe_rows(implode(',', $this->select), $this->table, 
+			$this->clause_string());
+	}
+	
+	public function extract_field( $field, $key = null ) {
+	// if $key is set, returns an associative array
+	// otherwise returns an indexed array
+	
+		$rs = $this->rows();
+		$out = array();
+		
+		if ( $rs and array_key_exists($field, $rs[0]) ) {
+		
+			if ( ! is_null($key) ) {
+				if ( array_key_exists($key, $rs[0]) )
+					foreach ( $rs as $r ) {
+						extract($r);
+						$out[$$key] = $$field;
+					}
+			}
+			else
+				foreach ( $rs as $r )
+					$out[] = $r[$field];
+		}
+
+		return $out;	// always returns an array
+	}
+		
+	public function field( $field ) {
+		$r = $this->row();
+		if ( isset($r[$field]) )
+			return $r[$field];
+	}
+
+	public function count() {
+		return getCount($this->from, $this->clause_string());
+	}
+	
+}
+////////////////////// end of class Soo_Select /////////////////////////////
 
 
 abstract class Soo_Txp_Data extends Soo_Obj {
