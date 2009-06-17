@@ -38,7 +38,7 @@ abstract class Soo_Obj {
 // low-level utility methods
 
 	public function __get( $property ) {
-		return isset($this->$property) ? $this->$property : null ;
+		return isset($this->$property) ? $this->$property : null;
 	}
 	
 	public function __call( $request, $args ) {
@@ -53,7 +53,6 @@ abstract class Soo_Obj {
 	
 	public function properties() {
 	// returns an object's properties as an associative array
-		$out = array();
 		foreach ( $this as $property => $value )
 			$out[$property] = $value;
 		return $out;
@@ -61,10 +60,7 @@ abstract class Soo_Obj {
 	
 	public function property_names() {
 	// returns an object's property names as an indexed array
-		$out = array();
-		foreach ( $this as $property => $value )
-			$out[] = $property;
-		return $out;
+		return array_keys($this->properties());
 	}
 	
 }
