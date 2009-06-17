@@ -67,7 +67,7 @@ abstract class Soo_Obj {
 ////////////////////// end of class Soo_Obj ////////////////////////////////
 
 
-abstract class Soo_Sql extends Soo_Obj {
+abstract class Soo_Txp_Query extends Soo_Obj {
 	
 	protected $table		= '';
 	protected $where		= array();
@@ -178,10 +178,10 @@ abstract class Soo_Sql extends Soo_Obj {
 	}
 	
 }
-////////////////////// end of class Soo_Sql ////////////////////////////
+////////////////////// end of class Soo_Txp_Query ////////////////////////////
 
 
-class Soo_Select extends Soo_Sql {
+class Soo_Txp_Select extends Soo_Txp_Query {
 	
 	protected $select		= array();
 	
@@ -243,36 +243,36 @@ class Soo_Select extends Soo_Sql {
 	}
 	
 }
-////////////////////// end of class Soo_Select /////////////////////////////
+////////////////////// end of class Soo_Txp_Select /////////////////////////////
 
 
-class Soo_Rowset extends Soo_Obj {
+class Soo_Txp_Rowset extends Soo_Obj {
 
 	protected $table		= '';
 	public $rows			= array();
 
 	function __construct( $init = array(), $table = '' ) {
-		if ( $init instanceof Soo_Select ) {
+		if ( $init instanceof Soo_Txp_Select ) {
 			$table = $init->table;
 			$init = $init->rows();
 		if ( is_array($init) )
 			foreach ( $init as $r )
-				$this->rows[] = $r instanceof Soo_Row ? 
-					$r : new Soo_Row($r, $table);
+				$this->rows[] = $r instanceof Soo_Txp_Row ? 
+					$r : new Soo_Txp_Row($r, $table);
 		}
 	}
 
 }
-////////////////////// end of class Soo_Rowset /////////////////////////////
+////////////////////// end of class Soo_Txp_Rowset /////////////////////////////
 
 
-class Soo_Row extends Soo_Obj {
+class Soo_Txp_Row extends Soo_Obj {
 
 	protected $table		= '';
 	protected $data			= array();
 	
 	function __construct( $init = array(), $table = '' ) {
-		if ( $init instanceof Soo_Select ) {
+		if ( $init instanceof Soo_Txp_Select ) {
 			$table = $init->table;
 			$init = $init->row();
 		}
@@ -292,10 +292,7 @@ class Soo_Row extends Soo_Obj {
 	}
 		
 }
-// $foo = new Soo_Select('txp_image');
-// $bar = new Soo_Rowset($foo);
-// var_dump($bar);
-////////////////////// end of class Soo_Row ////////////////////////////////
+////////////////////// end of class Soo_Txp_Row ////////////////////////////////
 
 
 abstract class Soo_Txp_Data extends Soo_Obj {
