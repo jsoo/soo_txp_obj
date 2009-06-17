@@ -67,6 +67,14 @@ abstract class Soo_Obj {
 ////////////////////// end of class Soo_Obj ////////////////////////////////
 
 
+abstract class Soo_Sql extends Soo_Obj {
+	
+	protected $table		= '';
+	
+}
+////////////////////// end of class Soo_Sql ////////////////////////////////
+
+
 abstract class Soo_Txp_Data extends Soo_Obj {
 // Abstract class for retrieving Textpattern database records.
 
