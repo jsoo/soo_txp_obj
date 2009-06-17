@@ -45,8 +45,6 @@ abstract class Soo_Obj {
 	public function __call( $request, $args ) {
 		if ( isset($this->$request) )
 			$this->$request = array_pop($args);
-		elseif ( isset($this->data) )
-			$this->data[$request] = array_pop($args);
 		return $this;
 	}
 	
@@ -85,6 +83,10 @@ abstract class Soo_Txp_Data extends Soo_Obj {
 	protected $offset		= 0;
 
 	protected $data			= array();
+	
+	function data( ) {
+		return; // to override parent::__call(), to keep $this->data protected
+	}
 		
 	function select( $list = '*' ) {
 		if ( is_string($list) ) $list = do_list($list);
@@ -262,13 +264,10 @@ abstract class Soo_Txp_Data extends Soo_Obj {
 	
 	protected function load_properties( $r = null ) {
 	// retrieve row if necessary; load record into $this->data
-		if ( ! $r )
-			$r = $this->row();
-		if ( ! is_array($r) ) return;
-		foreach ( $r as $k => $v )
-			if ( $k == 'date' )
-				$r[$k] = strtotime($v);
-		$this->data($r);
+		$r = $r ? $r : $this->row();
+		if ( is_array($r) )
+			foreach ( $r as $k => $v )
+				$this->data[$k] = $k == 'date' ? strtotime($v) : $v;
 	}
 	
 	public function properties( ) {
