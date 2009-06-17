@@ -38,8 +38,7 @@ abstract class Soo_Obj {
 // low-level utility methods
 
 	public function __get( $property ) {
-		return isset($this->$property) ? $this->$property :
-			( isset($this->data[$property]) ? $this->data[$property] : null );
+		return isset($this->$property) ? $this->$property : null ;
 	}
 	
 	public function __call( $request, $args ) {
@@ -83,6 +82,12 @@ abstract class Soo_Txp_Data extends Soo_Obj {
 	protected $offset		= 0;
 
 	protected $data			= array();
+	
+	public function __get( $property ) {
+		$out = parent::__get($property);
+		return $out ? $out :
+			( isset($this->data[$property]) ? $this->data[$property] : null );
+	}
 	
 	function data( ) {
 		return; // to override parent::__call(), to keep $this->data protected
