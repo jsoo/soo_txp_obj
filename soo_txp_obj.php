@@ -246,6 +246,58 @@ class Soo_Select extends Soo_Sql {
 ////////////////////// end of class Soo_Select /////////////////////////////
 
 
+class Soo_Rowset extends Soo_Obj {
+
+	protected $table		= '';
+	public $rows			= array();
+
+	function __construct( $init = array(), $table = '' ) {
+		if ( $init instanceof Soo_Select ) {
+			$table = $init->table;
+			$init = $init->rows();
+		if ( is_array($init) )
+			foreach ( $init as $r )
+				$this->rows[] = $r instanceof Soo_Row ? 
+					$r : new Soo_Row($r, $table);
+		}
+	}
+
+}
+////////////////////// end of class Soo_Rowset /////////////////////////////
+
+
+class Soo_Row extends Soo_Obj {
+
+	protected $table		= '';
+	protected $data			= array();
+	
+	function __construct( $init = array(), $table = '' ) {
+		if ( $init instanceof Soo_Select ) {
+			$table = $init->table;
+			$init = $init->row();
+		}
+		if ( is_array($init) )
+			foreach ( $init as $k => $v )
+				$this->data[$k] = $v;
+		$this->table = $table;
+	}
+
+	function __get( $property ) {
+		return isset($this->data[$property]) ? $this->data[$property] 
+			: parent::__get($property);
+	}
+	
+	function data( ) {
+		return; // to override parent::__call(), to keep $this->data protected
+	}
+		
+}
+// $foo = new Soo_Select('txp_image');
+// $bar = new Soo_Rowset($foo);
+// var_dump($bar);
+////////////////////// end of class Soo_Row ////////////////////////////////
+
+
 abstract class Soo_Txp_Data extends Soo_Obj {
 // Abstract class for retrieving Textpattern database records.
 
