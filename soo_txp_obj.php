@@ -211,6 +211,13 @@ abstract class Soo_Txp_Query extends Soo_Obj {
 	public function count() {
 		return getCount($this->from, $this->clause_string());
 	}
+
+	function index( $table ) {
+		if ( isset($this->numeric_index[$table]) )
+			return $this->numeric_index[$table];
+		if ( isset($this->string_index[$table]) )
+			return $this->string_index[$table];
+	}
 	
 }
 ////////////////////// end of class Soo_Txp_Query ////////////////////////////
@@ -289,17 +296,22 @@ class Soo_Txp_Rowset extends Soo_Obj {
 	function __construct( $init = array(), $table = '' ) {
 		if ( $init instanceof Soo_Txp_Select ) {
 			$table = $init->table;
+			$index = $init->index($table);
 			$init = $init->rows();
-		if ( is_array($init) )
-			foreach ( $init as $r )
-				$this->rows[] = $r instanceof Soo_Txp_Row ? 
-					$r : new Soo_Txp_Row($r, $table);
 		}
+		$this->table = $table;
+		if ( is_array($init) )
+			foreach ( $init as $r ) {
+				if ( ! empty($index) )
+					$this->rows[$r[$index]] = $r;
+				else
+					$this->rows[] = $r instanceof Soo_Txp_Row ? 
+						$r : new Soo_Txp_Row($r, $table);
+			}
 	}
 
 }
 ////////////////////// end of class Soo_Txp_Rowset /////////////////////////////
-
 
 class Soo_Txp_Row extends Soo_Obj {
 
@@ -307,7 +319,7 @@ class Soo_Txp_Row extends Soo_Obj {
 	protected $data			= array();
 	
 	function __construct( $init = array(), $table = '' ) {
-		if ( ( is_numeric($init) or is_string($init) ) and $table )
+		if ( is_scalar($init) and $table )
 			$init = new Soo_Txp_Select($table, $init);
 		if ( $init instanceof Soo_Txp_Select ) {
 			$table = $init->table;
@@ -344,8 +356,7 @@ class Soo_Txp_Img extends Soo_Txp_Row {
 	
 	function __construct( $init ) {
 		global $img_dir;
-		$this->table = 'txp_image';
-		parent::__construct($init, $this->table);
+		parent::__construct($init, 'txp_image');
 		$this->full_url = hu . $img_dir . '/' . $this->id . $this->ext;
 		$this->thumb_url = hu . $img_dir . '/' . $this->id . 't' . $this->ext;
 	}
