@@ -803,43 +803,6 @@ class Soo_Uri extends Soo_Obj {
 }
 /////////////////////// end of class Soo_Uri ////////////////////////////
 
-  //---------------------------------------------------------------------//
- //							Support Functions							//
-//---------------------------------------------------------------------//
-
-function _soo_echo( $item, $show_empty_props = false, $prefix = '&nbsp;' ) {
-// for debugging: echo a multidimensional array, object, whatever
-	
-	if ( ! defined('MY_PREFIX') )
-		define('MY_PREFIX', $prefix);
-	$prefix .= MY_PREFIX;
-	
-	if ( $item instanceof Soo_Obj ) {
-		echo $prefix . $item . ' object:<br />';
-		foreach ( $item->properties() as $p => $v ) {
-			if ( is_array($v) ) {
-				echo $prefix . $p . ':';
-				_soo_echo($v, $show_empty_props, $prefix);
-			}
-			elseif ( $v or $show_empty_props )
-				echo $prefix . $p . ': ' . $v . '<br />';
-		}
-	}
-
-	elseif ( is_array($item) ) {
-		echo $prefix . $item . ': ' . 
-			count($item) . ' item' . ( count($item) > 1 ? 's' : '' ) . ':<br />';
-		foreach ( $item as $key => $value )
- 			if ( ! is_array($value) and ! is_object($value) )
-				echo $prefix . $key . ': ' . $value . '<br />';
- 			else 
-				_soo_echo($value, $show_empty_props, $prefix);
- 	}
-	elseif ( $item and ! is_object($item) )
-		echo $prefix . $item . ':<br />';		
-	
-}
-
 # --- END PLUGIN CODE ---
 
 if (0) {
