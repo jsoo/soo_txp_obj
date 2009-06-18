@@ -307,6 +307,8 @@ class Soo_Txp_Row extends Soo_Obj {
 	protected $data			= array();
 	
 	function __construct( $init = array(), $table = '' ) {
+		if ( ( is_numeric($init) or is_string($init) ) and $table )
+			$init = new Soo_Txp_Select($table, $init);
 		if ( $init instanceof Soo_Txp_Select ) {
 			$table = $init->table;
 			$init = $init->row();
@@ -343,9 +345,7 @@ class Soo_Txp_Img extends Soo_Txp_Row {
 	function __construct( $init ) {
 		global $img_dir;
 		$this->table = 'txp_image';
-		if ( is_numeric($init) or is_string($init) )
-			$init = new Soo_Txp_Select($this->table, $init);
-		parent::__construct($init);
+		parent::__construct($init, $this->table);
 		$this->full_url = hu . $img_dir . '/' . $this->id . $this->ext;
 		$this->thumb_url = hu . $img_dir . '/' . $this->id . 't' . $this->ext;
 	}
@@ -513,7 +513,7 @@ class Soo_Html_Img extends Soo_Html {
 	
 		$a = array();
 	
-		if ( $obj instanceof Soo_Txp_Row ) {
+		if ( $obj instanceof Soo_Txp_Img ) {
 			global $img_dir;
 			$a = $obj->properties();
 			$a['height'] = $a['h'];
