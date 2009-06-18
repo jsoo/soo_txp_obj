@@ -75,8 +75,43 @@ abstract class Soo_Txp_Query extends Soo_Obj {
 	protected $limit		= 0;
 	protected $offset		= 0;
 	
-	function __construct( $table = 'textpattern' ) {
+	protected $numeric_index	= array(
+		'textpattern'		=> 'ID',
+		'txp_category'		=> 'id',
+		'txp_discuss'		=> 'discussid',
+		'txp_file'			=> 'id',
+		'txp_image'			=> 'id',
+		'txp_lang'			=> 'id',
+		'txp_link'			=> 'id',
+		'txp_log'			=> 'id',
+		'txp_prefs'			=> 'prefs_id',
+		'txp_users'			=> 'user_id',
+	);
+	protected $string_index		= array(
+		'textpattern'		=> 'Title',
+		'txp_category'		=> 'name',
+		'txp_css'			=> 'name',
+		'txp_discuss_ipban'	=> 'ip',
+		'txp_discuss_nonce'	=> 'nonce',
+		'txp_file'			=> 'filename',
+		'txp_form'			=> 'name',
+		'txp_image'			=> 'name',
+		'txp_lang'			=> 'lang',
+		'txp_page'			=> 'name',
+		'txp_plugin'		=> 'name',
+		'txp_prefs'			=> 'name',
+		'txp_section'		=> 'name',
+		'txp_users'			=> 'name',
+	);
+	
+	function __construct( $table, $key = '' ) {
 		$this->table = trim($table);
+		if ( $key ) {
+			if ( is_numeric($key) and isset($this->numeric_index[$table]) )
+				$this->where($this->numeric_index[$table], $key);
+			elseif ( is_string($key) and isset($this->string_index[$table]) )
+				$this->where($this->string_index[$table], $key);
+		}
 	}
 
 	function where( $column, $value, $operator = '=', $join = '' ) {
@@ -239,7 +274,7 @@ class Soo_Txp_Select extends Soo_Txp_Query {
 	}
 
 	public function count() {
-		return getCount($this->from, $this->clause_string());
+		return getCount($this->table, $this->clause_string());
 	}
 	
 }
@@ -290,293 +325,34 @@ class Soo_Txp_Row extends Soo_Obj {
 	function data( ) {
 		return; // to override parent::__call(), to keep $this->data protected
 	}
-		
-}
-////////////////////// end of class Soo_Txp_Row ////////////////////////////////
-
-
-abstract class Soo_Txp_Data extends Soo_Obj {
-// Abstract class for retrieving Textpattern database records.
-
-	protected $select		= array();
-	protected $from			= 'textpattern';
-	protected $where		= array();
-	protected $order_by		= array();
-	protected $limit		= 0;
-	protected $offset		= 0;
-
-	protected $data			= array();
-	
-	public function __get( $property ) {
-		return isset($this->data[$property]) ? $this->data[$property] 
-			: parent::__get($property);
-	}
-	
-	function data( ) {
-		return; // to override parent::__call(), to keep $this->data protected
-	}
-		
-	function select( $list = '*' ) {
-		if ( is_string($list) ) $list = do_list($list);
-		foreach ( $list as $col ) $this->select[] = self::quote($col);
-		return $this;
-	}
-	
-	function from( $table ) {
-		$this->from = trim($table);
-		return $this;
-	}
-	
-	function where( $column, $value, $operator = '=', $join = '' ) {
-		$join = $this->andor($join);
-		$this->where[] = ( $join ? $join . ' ' : '' ) . 
-			self::quote($column) . ' ' . $operator . " '" . $value . "'";
-		return $this;
-	}
-	
-	function in( $column, $list, $join = '', $in = true ) {
-		$in = ( $in ? '' : ' not' ) . ' in (';
-		if ( is_string($list) ) $list = do_list($list);
-		$join = $this->andor($join);
-		$this->where[] = ( $join ? $join . ' ' : '' ) . self::quote($column) . 
-			$in . implode(',', quote_list(doSlash($list))) . ')';
-		return $this;
-	}
-	
-	function not_in( $column, $list, $join = '' ) {
-		return $this->in( $column , $list , $join , false );
-	}
-	
-	function regexp( $pattern, $subject, $join = '' ) {
-		$join = $this->andor($join);
-		$this->where[] = ( $join ? $join . ' ' : '' ) . 
-			self::quote($subject) . " regexp '" . $pattern . "'";
-		return $this;
-	}
-	
-	private function andor( $join = 'and' ) {
-		$join = strtolower($join);
-		return count($this->where) ? 
-			( in_list($join, 'and,or') ? $join : 'and' ) : '';
-	}
-	
-	private function quote( $identifier ) {
-	// quote with backticks only if $identifier consists only of alphanumerics, $, or _
-		return preg_match('/^[a-z_$\d]+$/i', $identifier) ?
-			'`' . $identifier . '`' : $identifier;
-	}
-		
-	function order_by( $expr, $direction = '' ) {
-		
-		if ( $expr ) {
-	
-			$expr = do_list(strtolower($expr));
-			
-			foreach ( $expr as $x ) {
-				
-				if ( preg_match('/(\S+)\s+(\S+)/', $x, $match) ) {
-					$column = $match[1];
-					$direction = $match[2];
-				}
-				else
-					$column = $x;
-			
-				if ( $column == 'random' or $column == 'rand' or $column == 'rand()' ) {
-					$column = 'rand()';
-					$direction = '';
-				}
-				else 
-					$direction = in_array($direction, array('asc', 'desc')) ?
-						$direction : '';
-					
-				$this->order_by[] = $column . ( $direction ? ' ' . $direction : '');
-			}
-		}
-		
-		return $this;
-	}
-	
-	function order_by_field( $field, $list ) { // for preserving arbitrary order
-		if ( is_string($list) ) $list = do_list($list);
-		if ( count($list) > 1 )
-			$this->order_by[] = 'field(' . $field . ', ' .
-				implode(', ', quote_list(doSlash($list))) . ')';
-	}
-	
-	function limit( $limit ) {
-		if ( is_numeric($limit) and $limit > 0 )
-			$this->limit = ' limit ' . intval($limit);
-		return $this;
-	}
-	
-	function offset( $offset ) {
-		if ( is_numeric($offset) and $offset > 0 )
-			$this->offset = ' offset ' . intval($offset);
-		return $this;
-	}
-	
-	private function clause_string() {
-		return implode(' ', $this->where) .
-			( count($this->order_by) ? ' order by ' . implode(', ', $this->order_by) : '' ) .
-			( $this->limit ? $this->limit : '' ) . ( $this->offset ? $this->offset : '' );
-	}
-
-	private function init_query() {
-		if ( !count($this->select) ) $this->select();
-		if ( !count($this->where) ) $this->where[] = '1 = 1';
-	}
-	
-	public function echo_query() {
-		echo 'select ' .
-			( count($this->select) ? implode(',', $this->select) : '*' ) .
-			' from ' . $this->from . ' where ' . $this->clause_string();
-	}
-		
-	public function row() {
-		$this->init_query();
-		return safe_row(implode(',', $this->select), $this->from, 
-			$this->clause_string());
-	}
-	
-	public function rows() {
-		$this->init_query();
-		return safe_rows(implode(',', $this->select), $this->from, 
-			$this->clause_string());
-	}
-	
-	public function extract_field( $field, $key = null ) {
-	// if $key is set, returns an associative array
-	// otherwise returns an indexed array
-	
-		$rs = $this->rows();
-		$out = array();
-		
-		if ( $rs and array_key_exists($field, $rs[0]) ) {
-		
-			if ( ! is_null($key) ) {
-				if ( array_key_exists($key, $rs[0]) )
-					foreach ( $rs as $r ) {
-						extract($r);
-						$out[$$key] = $$field;
-					}
-			}
-			else
-				foreach ( $rs as $r )
-					$out[] = $r[$field];
-		}
-
-		return $out;	// always returns an array
-	}
-		
-	public function field( $field ) {
-		$r = $this->row();
-		if ( isset($r[$field]) )
-			return $r[$field];
-	}
-
-	public function count() {
-		return getCount($this->from, $this->clause_string());
-	}
-	
-	protected function retrieve( $key, $value ) {
-		if ( ! $key or ! $value )
-			return;
-		if ( is_numeric($value) )
-			$this->where($key, intval($value));
-		elseif ( is_string($value) )
-			$this->where($key, doSlash($value))->limit(1);
-		else
-			return false;
-		$this->load_properties();
-	}
-	
-	protected function load_properties( $r = null ) {
-	// retrieve row if necessary; load record into $this->data
-		$r = $r ? $r : $this->row();
-		if ( is_array($r) )
-			foreach ( $r as $k => $v )
-				$this->data[$k] = $k == 'date' ? strtotime($v) : $v;
-	}
 	
 	public function properties( ) {
 		return $this->data;
 	}
 
-}	
-////////////////////// end of class Soo_Txp_Data ///////////////////////////
-
-class Soo_Txp_Article extends Soo_Txp_Data {
-			
-	function __construct( $id = '') {
-		$this->retrieve('ID', $id);
-		return $this;
-	}
-	
-}
-/////////////////// End of class Soo_Txp_Article ///////////////////////////
-
-class Soo_Txp_File extends Soo_Txp_Data {
-
-	function __construct( $key = '' ) {
-		$this->from = 'txp_file';
-		if ( is_numeric($key) )
-			$this->retrieve('id', $key);
-		else
-			$this->retrieve('filename', $key);
-	}
-
-}
-////////////////////// End of class Soo_Txp_File ///////////////////////////
-
-class Soo_Txp_Form extends Soo_Txp_Data {
-	
-	function __construct( $name = '' ) {
-		$this->from = 'txp_form';
-		$this->retrieve('name', $name);
-	}
 		
 }
-////////////////////// End of class Soo_Txp_Form ///////////////////////////
+////////////////////// end of class Soo_Txp_Row ////////////////////////////////
 
-class Soo_Txp_Img extends Soo_Txp_Data {
+
+class Soo_Txp_Img extends Soo_Txp_Row {
 			
-	function __construct( $input = null ) {
-		$this->from = 'txp_image';
-		if ( is_numeric($input) )
-			$this->retrieve('id', $input);
-		elseif ( is_string($input) )
-			$this->retrieve('name', $input);
-		elseif ( is_array($input) )
-			$this->load_properties($input);
-	}
-			
-	function full_url() {
+	protected $full_url		= '';
+	protected $thumb_url	= '';
+	
+	function __construct( $init ) {
 		global $img_dir;
-		return hu . $img_dir . '/' . $this->id . $this->ext;
+		$this->table = 'txp_image';
+		if ( is_numeric($init) or is_string($init) )
+			$init = new Soo_Txp_Select($this->table, $init);
+		parent::__construct($init);
+		$this->full_url = hu . $img_dir . '/' . $this->id . $this->ext;
+		$this->thumb_url = hu . $img_dir . '/' . $this->id . 't' . $this->ext;
 	}
 		
 }
 /////////////////////// end of class Soo_Txp_Img ///////////////////////////
 
-class Soo_Txp_Plugin extends Soo_Txp_Data {
-	
-	function __construct( $name = '' ) {
-		$this->from = 'txp_plugin';
-		$this->retrieve('name', $name);
-	}
-		
-}
-////////////////////// End of class Soo_Txp_Plugin /////////////////////////
-
-class Soo_Txp_Prefs extends Soo_Txp_Data {
-	
-	function __construct( $name = '' ) {
-		$this->from = 'txp_prefs';
-		$this->retrieve('name', $name);
-	}
-		
-}
-////////////////////// End of class Soo_Txp_Prefs //////////////////////////
 
 abstract class Soo_Html extends Soo_Obj {
 // HTML element class. Instantiation takes a required 'name' argument and an
@@ -737,7 +513,7 @@ class Soo_Html_Img extends Soo_Html {
 	
 		$a = array();
 	
-		if ( $obj instanceof Soo_Txp_Img ) {
+		if ( $obj instanceof Soo_Txp_Row ) {
 			global $img_dir;
 			$a = $obj->properties();
 			$a['height'] = $a['h'];
