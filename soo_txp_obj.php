@@ -407,12 +407,15 @@ abstract class soo_html extends soo_obj {
 	protected $style			= '';
 	protected $title			= '';
 	
-	function __construct($element_name, $atts = array()) {
-	// It is up to each child class to know what its protected properties should be
-		$this->element_name = $element_name;			
+	function __construct($element_name, $atts, $content = '') {
+		$this->element_name = $element_name;
+		if ( empty($atts) )
+			$atts = array();
 		foreach ( $this as $property => $value )
 			if ( in_array($property, array_keys($atts)) )
 				$this->$property = $atts[$property];
+		if ( $content )
+			$this->contents($content);
 	}
 
 	public function set_id($id) {
@@ -427,8 +430,12 @@ abstract class soo_html extends soo_obj {
 	}
 	
 	public function contents($content) {
-		if ( !$this->is_empty )
-			$this->contents[] = $content; // needs validation routine
+		if ( ! $this->is_empty ) {
+			if ( is_array($content) )
+				$this->contents[] = array_merge($this->contents, $content);
+			else
+				$this->contents[] = $content;
+		}
 		return $this;
 	}
 	
@@ -498,24 +505,21 @@ class soo_html_anchor extends soo_html {
 	protected $onfocus			= '';
 	protected $onblur			= '';
 
-	public function __construct ( $url = '', $atts = array() ) {
-			
-		parent::__construct( 'a', $atts );
-		
-		return $this->is_empty(false)
-			->is_block(false)
-			->can_contain(array())
-			->href($url);
+	public function __construct ( $atts = array(), $content = '' ) {
+	// $atts can be an array, or just the href value
+		if ( ! is_array($atts) )
+			$atts = array('href' => $atts);
+		$this->is_empty(false)->is_block(false);
+		parent::__construct( 'a', $atts, $content );
 	}
 	
 }
-///////////////////// end of class soo_html_anchor //////////////////////////
 
 class soo_html_br extends soo_html {
+
 	public function __construct ( $atts = array() ) {
 		parent::__construct( 'br', $atts );
-		return $this->is_empty(true)
-			->is_block(false);
+		$this->is_empty(true)->is_block(false);
 	}
 }
 
@@ -561,18 +565,13 @@ class soo_html_img extends soo_html {
 
 class soo_html_p extends soo_html {
 	
-	public function __construct ( $contents = '', $atts = array() ) {
-		parent::__construct('p', $atts);
-		
+	public function __construct ( $atts = array(), $content = '' ) {
 		$this->is_empty(false)
 			->is_block(true)
 			->can_contain(array('inline'));
-			
-		if ( $contents )
-			$this->contents($contents);
+		parent::__construct('p', $atts, $content);
 	}
 }
-/////////////////////// end of class soo_html_p ////////////////////////////
 
 class soo_html_table extends soo_html {
 
@@ -584,20 +583,15 @@ class soo_html_table extends soo_html {
 	protected $cellspacing			= '';
 	protected $cellpadding			= '';
 
-	public function __construct ( $atts = array() ) {
-			
-		parent::__construct( 'table', $atts );
-		
+	public function __construct ( $atts = array(), $content = '' ) {
 		$this->is_empty(false)
 			->is_block(true)
 			->can_contain(array('caption', 'col', 'colgroup', 
 				'thead', 'tfoot', 'tbody'));
 			// can also contain tr if only one tbody and no tfoot or thead;
-
+		parent::__construct( 'table', $atts, $content );
 	}
-	
 }
-/////////////////////// end of class soo_html_table ////////////////////////////
 
 abstract class soo_html_table_component extends soo_html {
 
@@ -606,64 +600,43 @@ abstract class soo_html_table_component extends soo_html {
 	protected $charoff				= '';
 	protected $valign				= '';
 
-	public function __construct ( $component, $atts = array() ) {
-			
-		parent::__construct( $component, $atts );
-		
-		$this->is_empty(false)
-			->is_block(true);
+	public function __construct ( $component, $atts = array(), $content = '' ) {
+		$this->is_empty(false)->is_block(true);
+		parent::__construct( $component, $atts, $content );
 	}
-	
 }
-///////////////// end of class soo_html_table_component /////////////////////////
 
 class soo_html_thead extends soo_html_table_component {
 
-	public function __construct ( $atts = array() ) {
-			
-		parent::__construct( 'thead', $atts );
-		
+	public function __construct ( $atts = array(), $content = '' ) {
 		$this->can_contain(array('tr'));
+		parent::__construct( 'thead', $atts, $content );
 	}
-	
 }
-/////////////////////// end of class soo_html_thead ////////////////////////////
 
 class soo_html_tbody extends soo_html_table_component {
 
-	public function __construct ( $atts = array() ) {
-			
-		parent::__construct( 'tbody', $atts );
-		
+	public function __construct ( $atts = array(), $content = '' ) {
 		$this->can_contain(array('tr'));
+		parent::__construct( 'tbody', $atts, $content );
 	}
-	
 }
-/////////////////////// end of class soo_html_tbody ////////////////////////////
 
 class soo_html_tfoot extends soo_html_table_component {
 
-	public function __construct ( $atts = array() ) {
-			
-		parent::__construct( 'tfoot', $atts );
-		
+	public function __construct ( $atts = array(), $content = '' ) {
 		$this->can_contain(array('tr'));
+		parent::__construct( 'tfoot', $atts, $content );
 	}
-	
 }
-/////////////////////// end of class soo_html_tfoot ////////////////////////////
 
 class soo_html_tr extends soo_html_table_component {
 			
-	public function __construct ( $atts = array() ) {
-			
-		parent::__construct( 'tr', $atts );
-		
+	public function __construct ( $atts = array(), $content = '' ) {
 		$this->can_contain(array('th', 'td'));
-	}
-	
+		parent::__construct( 'tr', $atts, $content );
+	}	
 }
-/////////////////////// end of class soo_html_tr ////////////////////////////
 
 abstract class soo_html_table_cell extends soo_html_table_component {
 
@@ -674,112 +647,64 @@ abstract class soo_html_table_cell extends soo_html_table_component {
 	protected $scope			= '';
 	protected $axis				= '';
 
-	public function __construct ( $cell_type, $atts = array() ) {
+	public function __construct ( $cell_type, $atts = array(), $content = '' ) {
 			
-		parent::__construct( $cell_type, $atts );
-		
+		parent::__construct( $cell_type, $atts, $content );		
 // 		$this->can_contain(array('caption', 'col', 'colgroup', 
 // 				'thead', 'tfoot', 'tbody'));
 	}
-	
 }
-/////////////////// end of class soo_html_table_cell ////////////////////////
 
 class soo_html_th extends soo_html_table_cell {
 
-	public function __construct ( $contents = '', $atts = array() ) {
-			
-		parent::__construct( 'th', $atts );
-		
-		if ( $contents ) $this->contents($contents);
-		
-		return $this;
-		
+	public function __construct ( $atts = array(), $content = '' ) {
+		parent::__construct( 'th', $atts, $content );
 	}
-		
 }
-/////////////////////// end of class soo_html_th ////////////////////////////
 
 class soo_html_td extends soo_html_table_cell {
 
-	public function __construct ( $contents = '', $atts = array() ) {
-			
-		parent::__construct( 'td', $atts );
-		
-		if ( $contents ) $this->contents($contents);
-		
-		return $this;
-		
+	public function __construct ( $atts = array(), $content = '' ) {
+		parent::__construct( 'td', $atts, $content );
 	}
 		
 }
-/////////////////////// end of class soo_html_td ////////////////////////////
 
 class soo_html_ol extends soo_html {
 
-	public function __construct ( $atts = array() ) {
-			
-		parent::__construct( 'ol', $atts );
-		
+	public function __construct ( $atts = array(), $content = '' ) {
 		$this->is_empty(false)
 			->is_block(true);
 			//->can_contain(array('li'));
+		parent::__construct( 'ol', $atts, $content );
 	}
-	
-
 }
-/////////////////////// end of class soo_html_ol ////////////////////////////
 
 class soo_html_ul extends soo_html {
 
-	public function __construct ( $atts = array() ) {
-			
-		parent::__construct( 'ul', $atts );
-		
+	public function __construct ( $atts = array(), $content = '' ) {
 		$this->is_empty(false)
 			->is_block(true);
 			//->can_contain(array('li'));
+		parent::__construct( 'ul', $atts, $content );
 	}
-	
-
 }
-/////////////////////// end of class soo_html_ul ////////////////////////////
 
 class soo_html_li extends soo_html {
 
-	public function __construct ( $contents = '', $atts = array() ) {
-			
-		parent::__construct( 'li', $atts );
-		
-		$this->is_empty(false)
-			->is_block(true);
-			//->can_contain(array('ol', 'ul'));	
-			// actually can contain almost anything other than li
-		
-		if ( $contents )
-			$this->contents($contents);
+	public function __construct ( $atts = array(), $content = '' ) {
+		$this->is_empty(false)->is_block(true);
+		parent::__construct('li', $atts, $content);
 	}
-	
-
 }
-/////////////////////// end of class soo_html_li ////////////////////////////
 
 class soo_html_span extends soo_html {
 
-	public function __construct ( $contents = '', $atts = array() ) {
-			
-		parent::__construct( 'span', $atts );
-		
-		$this->is_empty(false)
-			->is_block(false);
-		
-		if ( $contents )
-			$this->contents($contents);
+	public function __construct ( $atts = array(), $content = '' ) {
+		$this->is_empty(false)->is_block(false);
+		parent::__construct('span', $atts, $content);
 	}
-	
-
 }
-/////////////////////// end of class soo_html_span ////////////////////////////
 
 class soo_uri extends soo_obj {
 	
