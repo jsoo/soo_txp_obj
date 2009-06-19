@@ -183,6 +183,16 @@ abstract class Soo_Txp_Query extends Soo_Obj {
 		return $this;
 	}
 	
+	function asc( $col ) {
+		$this->order_by($col, 'asc');
+		return $this;
+	}
+
+	function desc( $col ) {
+		$this->order_by($col, 'desc');
+		return $this;
+	}
+	
 	function order_by_field( $field, $list ) { // for preserving arbitrary order
 		if ( is_string($list) ) $list = do_list($list);
 		if ( count($list) > 1 )
