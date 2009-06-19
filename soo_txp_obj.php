@@ -33,7 +33,7 @@ $plugin['type'] = 2;
  //									Classes								//
 //---------------------------------------------------------------------//
 
-abstract class Soo_Obj {
+abstract class soo_obj {
 // Root class for all Soo_Txp_* classes
 // low-level utility methods
 
@@ -64,10 +64,10 @@ abstract class Soo_Obj {
 	}
 	
 }
-////////////////////// end of class Soo_Obj ////////////////////////////////
+////////////////////// end of class soo_obj ////////////////////////////////
 
 
-abstract class Soo_Txp_Query extends Soo_Obj {
+abstract class soo_txp_query extends soo_obj {
 	
 	protected $table		= '';
 	protected $where		= array();
@@ -230,10 +230,10 @@ abstract class Soo_Txp_Query extends Soo_Obj {
 	}
 	
 }
-////////////////////// end of class Soo_Txp_Query ////////////////////////////
+////////////////////// end of class soo_txp_query ////////////////////////////
 
 
-class Soo_Txp_Select extends Soo_Txp_Query {
+class soo_txp_select extends soo_txp_query {
 	
 	protected $select		= array();
 	
@@ -295,16 +295,16 @@ class Soo_Txp_Select extends Soo_Txp_Query {
 	}
 	
 }
-////////////////////// end of class Soo_Txp_Select /////////////////////////////
+////////////////////// end of class soo_txp_select /////////////////////////////
 
 
-class Soo_Txp_Rowset extends Soo_Obj {
+class soo_txp_rowset extends soo_obj {
 
 	protected $table		= '';
 	public $rows			= array();
 
 	function __construct( $init = array(), $table = '' ) {
-		if ( $init instanceof Soo_Txp_Select ) {
+		if ( $init instanceof soo_txp_select ) {
 			$table = $init->table;
 			$index = $init->index($table);
 			$init = $init->rows();
@@ -315,23 +315,23 @@ class Soo_Txp_Rowset extends Soo_Obj {
 				if ( ! empty($index) )
 					$this->rows[$r[$index]] = $r;
 				else
-					$this->rows[] = $r instanceof Soo_Txp_Row ? 
-						$r : new Soo_Txp_Row($r, $table);
+					$this->rows[] = $r instanceof soo_txp_row ? 
+						$r : new soo_txp_row($r, $table);
 			}
 	}
 
 }
-////////////////////// end of class Soo_Txp_Rowset /////////////////////////////
+////////////////////// end of class soo_txp_rowset /////////////////////////////
 
-class Soo_Txp_Row extends Soo_Obj {
+class soo_txp_row extends soo_obj {
 
 	protected $table		= '';
 	protected $data			= array();
 	
 	function __construct( $init = array(), $table = '' ) {
 		if ( is_scalar($init) and $table )
-			$init = new Soo_Txp_Select($table, $init);
-		if ( $init instanceof Soo_Txp_Select ) {
+			$init = new soo_txp_select($table, $init);
+		if ( $init instanceof soo_txp_select ) {
 			$table = $init->table;
 			$init = $init->row();
 		}
@@ -356,10 +356,10 @@ class Soo_Txp_Row extends Soo_Obj {
 
 		
 }
-////////////////////// end of class Soo_Txp_Row ////////////////////////////////
+////////////////////// end of class soo_txp_row ////////////////////////////////
 
 
-class Soo_Txp_Img extends Soo_Txp_Row {
+class soo_txp_img extends soo_txp_row {
 			
 	protected $full_url		= '';
 	protected $thumb_url	= '';
@@ -372,15 +372,15 @@ class Soo_Txp_Img extends Soo_Txp_Row {
 	}
 		
 }
-/////////////////////// end of class Soo_Txp_Img ///////////////////////////
+/////////////////////// end of class soo_txp_img ///////////////////////////
 
 
-abstract class Soo_Html extends Soo_Obj {
+abstract class soo_html extends soo_obj {
 // HTML element class. Instantiation takes a required 'name' argument and an
 // optional 'atts' array: items with keys matching HTML attributes 
 // will be transferred to the new object.
 // 
-// See the Soo_Html_Img class for an example of how to extend this class.
+// See the soo_html_img class for an example of how to extend this class.
 	
 	// inherent properties
 	protected $element_name	= '';
@@ -465,7 +465,7 @@ abstract class Soo_Html extends Soo_Obj {
 				
 		foreach ( $this->contents as $item )
 			
-			if ( $item instanceof Soo_Html )
+			if ( $item instanceof soo_html )
 				$out .= $item->tag() . n;		// recursion ...
 				
 			else
@@ -480,9 +480,9 @@ abstract class Soo_Html extends Soo_Obj {
 	}
 	
 }
-/////////////////////// end of class Soo_Html //////////////////////////////
+/////////////////////// end of class soo_html //////////////////////////////
 
-class Soo_Html_Anchor extends Soo_Html {
+class soo_html_anchor extends soo_html {
 
 	protected $href				= '';
 	protected $name				= '';
@@ -509,9 +509,9 @@ class Soo_Html_Anchor extends Soo_Html {
 	}
 	
 }
-///////////////////// end of class Soo_Html_Anchor //////////////////////////
+///////////////////// end of class soo_html_anchor //////////////////////////
 
-class Soo_Html_Br extends Soo_Html {
+class soo_html_br extends soo_html {
 	public function __construct ( $atts = array() ) {
 		parent::__construct( 'br', $atts );
 		return $this->is_empty(true)
@@ -519,7 +519,7 @@ class Soo_Html_Br extends Soo_Html {
 	}
 }
 
-class Soo_Html_Img extends Soo_Html {
+class soo_html_img extends soo_html {
 
 	protected $alt				= '';
 	protected $src				= '';
@@ -534,7 +534,7 @@ class Soo_Html_Img extends Soo_Html {
 	
 		$a = array();
 	
-		if ( $obj instanceof Soo_Txp_Img ) {
+		if ( $obj instanceof soo_txp_img ) {
 			global $img_dir;
 			$a = $obj->properties();
 			$a['height'] = $a['h'];
@@ -556,10 +556,10 @@ class Soo_Html_Img extends Soo_Html {
 	}
 	
 }
-/////////////////////// end of class Soo_Html_Img //////////////////////////
+/////////////////////// end of class soo_html_img //////////////////////////
 
 
-class Soo_Html_P extends Soo_Html {
+class soo_html_p extends soo_html {
 	
 	public function __construct ( $contents = '', $atts = array() ) {
 		parent::__construct('p', $atts);
@@ -572,9 +572,9 @@ class Soo_Html_P extends Soo_Html {
 			$this->contents($contents);
 	}
 }
-/////////////////////// end of class Soo_Html_P ////////////////////////////
+/////////////////////// end of class soo_html_p ////////////////////////////
 
-class Soo_Html_Table extends Soo_Html {
+class soo_html_table extends soo_html {
 
 	protected $summary				= '';
 	protected $width				= '';
@@ -597,9 +597,9 @@ class Soo_Html_Table extends Soo_Html {
 	}
 	
 }
-/////////////////////// end of class Soo_Html_Table ////////////////////////////
+/////////////////////// end of class soo_html_table ////////////////////////////
 
-abstract class Soo_Html_Table_Component extends Soo_Html {
+abstract class soo_html_table_component extends soo_html {
 
 	protected $align				= '';
 	protected $char					= '';
@@ -615,9 +615,9 @@ abstract class Soo_Html_Table_Component extends Soo_Html {
 	}
 	
 }
-///////////////// end of class Soo_Html_Table_Component /////////////////////////
+///////////////// end of class soo_html_table_component /////////////////////////
 
-class Soo_Html_Thead extends Soo_Html_Table_Component {
+class soo_html_thead extends soo_html_table_component {
 
 	public function __construct ( $atts = array() ) {
 			
@@ -627,9 +627,9 @@ class Soo_Html_Thead extends Soo_Html_Table_Component {
 	}
 	
 }
-/////////////////////// end of class Soo_Html_Thead ////////////////////////////
+/////////////////////// end of class soo_html_thead ////////////////////////////
 
-class Soo_Html_Tbody extends Soo_Html_Table_Component {
+class soo_html_tbody extends soo_html_table_component {
 
 	public function __construct ( $atts = array() ) {
 			
@@ -639,9 +639,9 @@ class Soo_Html_Tbody extends Soo_Html_Table_Component {
 	}
 	
 }
-/////////////////////// end of class Soo_Html_Tbody ////////////////////////////
+/////////////////////// end of class soo_html_tbody ////////////////////////////
 
-class Soo_Html_Tfoot extends Soo_Html_Table_Component {
+class soo_html_tfoot extends soo_html_table_component {
 
 	public function __construct ( $atts = array() ) {
 			
@@ -651,9 +651,9 @@ class Soo_Html_Tfoot extends Soo_Html_Table_Component {
 	}
 	
 }
-/////////////////////// end of class Soo_Html_Tfoot ////////////////////////////
+/////////////////////// end of class soo_html_tfoot ////////////////////////////
 
-class Soo_Html_Tr extends Soo_Html_Table_Component {
+class soo_html_tr extends soo_html_table_component {
 			
 	public function __construct ( $atts = array() ) {
 			
@@ -663,9 +663,9 @@ class Soo_Html_Tr extends Soo_Html_Table_Component {
 	}
 	
 }
-/////////////////////// end of class Soo_Html_Tr ////////////////////////////
+/////////////////////// end of class soo_html_tr ////////////////////////////
 
-abstract class Soo_Html_Table_Cell extends Soo_Html_Table_Component {
+abstract class soo_html_table_cell extends soo_html_table_component {
 
 	protected $rowspan			= '';
 	protected $colspan			= '';
@@ -683,9 +683,9 @@ abstract class Soo_Html_Table_Cell extends Soo_Html_Table_Component {
 	}
 	
 }
-/////////////////// end of class Soo_Html_Table_Cell ////////////////////////
+/////////////////// end of class soo_html_table_cell ////////////////////////
 
-class Soo_Html_Th extends Soo_Html_Table_Cell {
+class soo_html_th extends soo_html_table_cell {
 
 	public function __construct ( $contents = '', $atts = array() ) {
 			
@@ -698,9 +698,9 @@ class Soo_Html_Th extends Soo_Html_Table_Cell {
 	}
 		
 }
-/////////////////////// end of class Soo_Html_Th ////////////////////////////
+/////////////////////// end of class soo_html_th ////////////////////////////
 
-class Soo_Html_Td extends Soo_Html_Table_Cell {
+class soo_html_td extends soo_html_table_cell {
 
 	public function __construct ( $contents = '', $atts = array() ) {
 			
@@ -713,9 +713,9 @@ class Soo_Html_Td extends Soo_Html_Table_Cell {
 	}
 		
 }
-/////////////////////// end of class Soo_Html_Td ////////////////////////////
+/////////////////////// end of class soo_html_td ////////////////////////////
 
-class Soo_Html_Ol extends Soo_Html {
+class soo_html_ol extends soo_html {
 
 	public function __construct ( $atts = array() ) {
 			
@@ -728,9 +728,9 @@ class Soo_Html_Ol extends Soo_Html {
 	
 
 }
-/////////////////////// end of class Soo_Html_Ol ////////////////////////////
+/////////////////////// end of class soo_html_ol ////////////////////////////
 
-class Soo_Html_Ul extends Soo_Html {
+class soo_html_ul extends soo_html {
 
 	public function __construct ( $atts = array() ) {
 			
@@ -743,9 +743,9 @@ class Soo_Html_Ul extends Soo_Html {
 	
 
 }
-/////////////////////// end of class Soo_Html_Ul ////////////////////////////
+/////////////////////// end of class soo_html_ul ////////////////////////////
 
-class Soo_Html_Li extends Soo_Html {
+class soo_html_li extends soo_html {
 
 	public function __construct ( $contents = '', $atts = array() ) {
 			
@@ -762,9 +762,9 @@ class Soo_Html_Li extends Soo_Html {
 	
 
 }
-/////////////////////// end of class Soo_Html_Li ////////////////////////////
+/////////////////////// end of class soo_html_li ////////////////////////////
 
-class Soo_Html_Span extends Soo_Html {
+class soo_html_span extends soo_html {
 
 	public function __construct ( $contents = '', $atts = array() ) {
 			
@@ -779,9 +779,9 @@ class Soo_Html_Span extends Soo_Html {
 	
 
 }
-/////////////////////// end of class Soo_Html_Span ////////////////////////////
+/////////////////////// end of class soo_html_span ////////////////////////////
 
-class Soo_Uri extends Soo_Obj {
+class soo_uri extends soo_obj {
 	
 	protected $full;
 	protected $request_uri;
@@ -822,7 +822,7 @@ class Soo_Uri extends Soo_Obj {
 	}
 
 }
-/////////////////////// end of class Soo_Uri ////////////////////////////
+/////////////////////// end of class soo_uri ////////////////////////////
 
 # --- END PLUGIN CODE ---
 
@@ -871,9 +871,9 @@ This is a very minimal guide: there are too many classes for that (and most of t
 
 h3. Classes
 
-All the classes are extensions of the very simple *Soo_Obj* base class. Most of the classes fall into two families: data classes and HTML output classes. There is also a support class, Soo_Txp_Uri, mainly for handling URI query strings.
+All the classes are extensions of the very simple *soo_obj* base class. Most of the classes fall into two families: data classes and HTML output classes. There is also a support class, Soo_Txp_Uri, mainly for handling URI query strings.
 
-h4. Soo_Obj
+h4. soo_obj
 
 Super-parent abstract base class, with no properties and just a few low-level methods. Has @__get()@ as a generic getter, and a @__call()@ which will work as a generic setter for calls in the form @set_property($value)@, replacing "property" with an existing property name.
 
@@ -902,7 +902,7 @@ h3. 1.0.a.6
 What the heck, time to use the same naming convention I'm using with other plugins.
 
 * Added *Soo_Txp_Uri* class, for URI query string manipulation
-* *Soo_Html_P* and *Soo_Html_Th* can now have contents set during instantiation. Note that this will break compatibility with some previous uses, e.g. @new Soo_Html_P($atts)@.
+* *Soo_Html_P* and *soo_html_th* can now have contents set during instantiation. Note that this will break compatibility with some previous uses, e.g. @new Soo_Html_P($atts)@.
 * Added @$in@ argument to @where_in()@ method (*Soo_Txp_Data*) to allow "NOT IN" queries
 
 h3. 1.0.a5
