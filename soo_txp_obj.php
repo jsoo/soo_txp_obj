@@ -418,7 +418,7 @@ abstract class soo_html extends soo_obj {
 			$this->contents($content);
 	}
 
-	public function set_id($id) {
+	public function id($id) {
 		// Valid HTML IDs must begin with a letter
 		// Do not confuse with database IDs
 		if ( $id and !preg_match('/^[a-z]/', strtolower(trim($id))) ) {
