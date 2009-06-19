@@ -260,40 +260,9 @@ class soo_txp_select extends soo_txp_query {
 			$this->clause_string());
 	}
 	
-	public function extract_field( $field, $key = null ) {
-	// if $key is set, returns an associative array
-	// otherwise returns an indexed array
-	
-		$rs = $this->rows();
-		$out = array();
-		
-		if ( $rs and array_key_exists($field, $rs[0]) ) {
-		
-			if ( ! is_null($key) ) {
-				if ( array_key_exists($key, $rs[0]) )
-					foreach ( $rs as $r ) {
-						extract($r);
-						$out[$$key] = $$field;
-					}
-			}
-			else
-				foreach ( $rs as $r )
-					$out[] = $r[$field];
-		}
-
-		return $out;	// always returns an array
-	}
-		
-	public function field( $field ) {
-		$r = $this->row();
-		if ( isset($r[$field]) )
-			return $r[$field];
-	}
-
 	public function count() {
 		return getCount($this->table, $this->clause_string());
 	}
-	
 }
 ////////////////////// end of class soo_txp_select /////////////////////////////
 
@@ -313,13 +282,24 @@ class soo_txp_rowset extends soo_obj {
 		if ( is_array($init) )
 			foreach ( $init as $r ) {
 				if ( ! empty($index) )
-					$this->rows[$r[$index]] = $r;
+					$this->rows[$r[$index]] = new soo_txp_row($r, $table);
 				else
 					$this->rows[] = $r instanceof soo_txp_row ? 
 						$r : new soo_txp_row($r, $table);
 			}
 	}
 
+	public function field_vals( $field, $key = null ) {
+	// if $key is set, returns an associative array
+	// otherwise returns an indexed array
+	
+		foreach ( $this->rows as $r )
+			if ( ! is_null($key) )
+				$out[$r->$key] = $r->$field;
+			else
+				$out[] = $r->$field;
+		return isset($out) ? $out : array();
+	}
 }
 ////////////////////// end of class soo_txp_rowset /////////////////////////////
 
@@ -353,8 +333,6 @@ class soo_txp_row extends soo_obj {
 	public function properties( ) {
 		return $this->data;
 	}
-
-		
 }
 ////////////////////// end of class soo_txp_row ////////////////////////////////
 
@@ -408,12 +386,12 @@ abstract class soo_html extends soo_obj {
 	protected $title			= '';
 	
 	function __construct($element_name, $atts, $content = '') {
-		$this->element_name = $element_name;
+		$this->element_name($element_name);
 		if ( empty($atts) )
 			$atts = array();
 		foreach ( $this as $property => $value )
 			if ( in_array($property, array_keys($atts)) )
-				$this->$property = $atts[$property];
+				$this->$property($atts[$property]);
 		if ( $content )
 			$this->contents($content);
 	}
