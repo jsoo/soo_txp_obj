@@ -219,7 +219,9 @@ abstract class soo_txp_query extends soo_obj {
 	}
 
 	public function count() {
-		return getCount($this->from, $this->clause_string());
+		return getCount($this->table, $this->clause_string() ? 
+			$this->clause_string() : '1=1'
+		);
 	}
 
 	function index( $table ) {
@@ -260,9 +262,6 @@ class soo_txp_select extends soo_txp_query {
 			$this->clause_string());
 	}
 	
-	public function count() {
-		return getCount($this->table, $this->clause_string());
-	}
 }
 ////////////////////// end of class soo_txp_select /////////////////////////////
 
