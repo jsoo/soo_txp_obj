@@ -509,16 +509,16 @@ class soo_html_img extends soo_html {
 	protected $height			= '';
 			
 	public function __construct (
-		$obj = null, 
+		$init = null, 
 		$thumbnail = false, 
 		$escape = true
 	) {
 	
 		$a = array();
 	
-		if ( $obj instanceof soo_txp_img ) {
+		if ( $init instanceof soo_txp_img ) {
 			global $img_dir;
-			$a = $obj->properties();
+			$a = $init->properties();
 			$a['height'] = $a['h'];
 			$a['width'] = $a['w'];
 			$a['title'] = $a['caption'];
@@ -526,7 +526,10 @@ class soo_html_img extends soo_html {
 				( $thumbnail ? 't' : '' ) . $a['ext'];
 			unset($a['id']); // don't want database id as HTML id!
 		}
-		
+		elseif ( is_array($init) )
+			$a = $init;
+		elseif ( ! is_null($init) )
+			$a['src'] = $init;
 		parent::__construct('img', $a);
 		
 		$this->is_empty(true)
