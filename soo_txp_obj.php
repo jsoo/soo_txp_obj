@@ -511,13 +511,12 @@ class soo_html_img extends soo_html {
 	public function __construct ( $init = array(), $thumbnail = false, $escape = true ) {
 	
 		if ( $init instanceof soo_txp_img ) {
-			global $img_dir;
+			$src = $thumbnail ? $init->thumb_url : $init->full_url;
 			$init = $init->properties();
 			$init['height'] = $init['h'];
 			$init['width'] = $init['w'];
 			$init['title'] = $init['caption'];
-			$init['src'] = hu . $img_dir . '/' . $init['id'] .
-				( $thumbnail ? 't' : '' ) . $init['ext'];
+			$init['src'] = $src;
 			unset($init['id']); // don't want database id as HTML id!
 		}
 		elseif ( ! is_array($init) )
