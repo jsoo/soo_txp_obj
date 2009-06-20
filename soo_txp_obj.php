@@ -277,15 +277,11 @@ class soo_txp_rowset extends soo_obj {
 			$index = $init->index($table);
 			$init = $init->rows();
 		}
+		else
+			$index = null;
 		$this->table = $table;
-		if ( is_array($init) )
-			foreach ( $init as $r ) {
-				if ( ! empty($index) )
-					$this->rows[$r[$index]] = new soo_txp_row($r, $table);
-				else
-					$this->rows[] = $r instanceof soo_txp_row ? 
-						$r : new soo_txp_row($r, $table);
-			}
+		foreach ( $init as $r )
+			$this->add_row($r, $table, $r[$index]);
 	}
 
 	public function field_vals( $field, $key = null ) {
@@ -298,6 +294,17 @@ class soo_txp_rowset extends soo_obj {
 			else
 				$out[] = $r->$field;
 		return isset($out) ? $out : array();
+	}
+	
+	private function add_row( $data, $table, $i = null ) {
+		$r = $data instanceof soo_txp_row ? 
+			$data : ( $table == 'txp_image' ?
+				new soo_txp_img($data) : new soo_txp_row($data, $table) );
+		if ( is_null($i) )
+			$this->rows[] = $r;
+		else
+			$this->rows[$i] = $r;
+		return $this;
 	}
 }
 ////////////////////// end of class soo_txp_rowset /////////////////////////////
