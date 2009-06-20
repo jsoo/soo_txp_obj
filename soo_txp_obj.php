@@ -508,33 +508,24 @@ class soo_html_img extends soo_html {
 	protected $width			= '';
 	protected $height			= '';
 			
-	public function __construct (
-		$init = null, 
-		$thumbnail = false, 
-		$escape = true
-	) {
-	
-		$a = array();
+	public function __construct ( $init = array(), $thumbnail = false, $escape = true ) {
 	
 		if ( $init instanceof soo_txp_img ) {
 			global $img_dir;
-			$a = $init->properties();
-			$a['height'] = $a['h'];
-			$a['width'] = $a['w'];
-			$a['title'] = $a['caption'];
-			$a['src'] = hu . $img_dir . '/' . $a['id'] .
-				( $thumbnail ? 't' : '' ) . $a['ext'];
-			unset($a['id']); // don't want database id as HTML id!
+			$init = $init->properties();
+			$init['height'] = $init['h'];
+			$init['width'] = $init['w'];
+			$init['title'] = $init['caption'];
+			$init['src'] = hu . $img_dir . '/' . $init['id'] .
+				( $thumbnail ? 't' : '' ) . $init['ext'];
+			unset($init['id']); // don't want database id as HTML id!
 		}
-		elseif ( is_array($init) )
-			$a = $init;
-		elseif ( ! is_null($init) )
-			$a['src'] = $init;
-		parent::__construct('img', $a);
+		elseif ( ! is_array($init) )
+			$init['src'] = $init;
+		parent::__construct('img', $init);
 		
-		$this->is_empty(true)
-			->is_block(false)
-			->can_contain(array());
+		$this->is_empty(true)->is_block(false);
+//			->can_contain(array());
 		
 		if ( $escape )
 			$this->html_escape('title')->html_escape('alt');
