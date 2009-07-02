@@ -104,14 +104,10 @@ abstract class soo_txp_query extends soo_obj {
 		'txp_users'			=> 'name',
 	);
 	
-	function __construct( $table, $key = '' ) {
+	function __construct( $table, $key = null ) {
 		$this->table = trim($table);
-		if ( $key ) {
-			if ( is_numeric($key) and isset($this->numeric_index[$table]) )
-				$this->where($this->numeric_index[$table], $key);
-			elseif ( is_string($key) and isset($this->string_index[$table]) )
-				$this->where($this->string_index[$table], $key);
-		}
+		if ( $key )
+			$this->where($this->key_column($key), $key);
 	}
 
 	function where( $column, $value, $operator = '=', $join = '' ) {
@@ -224,11 +220,14 @@ abstract class soo_txp_query extends soo_obj {
 		);
 	}
 
-	function index( $table ) {
-		if ( isset($this->numeric_index[$table]) )
-			return $this->numeric_index[$table];
-		if ( isset($this->string_index[$table]) )
-			return $this->string_index[$table];
+	function key_column( $key_value = null ) {
+		if ( is_numeric($key_value) )
+			return $this->numeric_index[$this->table];
+		if ( is_string($key_value) )
+			return $this->string_index[$this->table];
+		if ( isset($this->numeric_index[$this->table]) )
+			return $this->numeric_index[$this->table];
+		return $this->string_index[$this->table];
 	}
 	
 }
@@ -274,14 +273,15 @@ class soo_txp_rowset extends soo_obj {
 	function __construct( $init = array(), $table = '' ) {
 		if ( $init instanceof soo_txp_select ) {
 			$table = $init->table;
-			$index = $init->index($table);
+			$index = $init->key_column();
 			$init = $init->rows();
 		}
-		else
-			$index = null;
 		$this->table = $table;
 		foreach ( $init as $r )
-			$this->add_row($r, $table, $r[$index]);
+			if ( isset($index) )
+				$this->add_row($r, $table, $r[$index]);
+			else
+				$this->add_row($r, $table);
 	}
 
 	public function field_vals( $field, $key = null ) {
