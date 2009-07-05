@@ -152,8 +152,12 @@ abstract class soo_txp_query extends soo_obj {
 	function order_by( $expr, $direction = '' ) {
 		
 		if ( $expr ) {
-	
-			$expr = do_list(strtolower($expr));
+			
+			if ( is_array($expr) )
+				$expr = array_map('strtolower', $expr);
+			
+			if ( is_string($expr) )
+				$expr = do_list(strtolower($expr));
 			
 			foreach ( $expr as $x ) {
 				
@@ -761,41 +765,54 @@ h1. soo_txp_obj
 
 h2(#overview). Overview
 
-*soo_txp_obj* is a library for creating Textpattern plugins. It has classes for Textpattern objects (queries and data) and HTML objects (HTML elements).
+*soo_txp_obj* is a library for creating Textpattern plugins. It has classes for query objects (SQL queries), data objects (Txp database records), and HTML objects (HTML elements).
 
 The design of the library aims for strict separation of data retrieval and HTML output. Of course boundaries do blur and you have to do what works, but a little extra time figuring out how to work with the model rather than around it can pay dividends.
 
-*soo_txp_obj* is still an alpha release. It is possible that future releases will not be entirely backward-compatible with this one.
+*soo_txp_obj* is currently a beta release. Future releases are not expected to (significantly) break backwards-compatibility.
 
 Suggestions and corrections gladly accepted. "Email the author &rarr;":http://ipsedixit.net/info/2/contact
 
-This is a very minimal guide: there are too many classes for that (and most of them are quite easy to figure out). More information and examples are available "here":http://ipsedixit.net/txp/21/soo-txp-obj.
+This is a very minimal guide. More information and examples are available "here":http://ipsedixit.net/txp/21/soo-txp-obj.
 
 h3. Classes
 
-All the classes are extensions of the very simple *soo_obj* base class. Most of the classes fall into two families: data classes and HTML output classes. There is also a support class, Soo_Txp_Uri, mainly for handling URI query strings.
+All the classes extend the *soo_obj* base class. Most of the classes fall into three families: queries, data records, and HTML element classes. Another class, soo_uri, is for handling URI query strings.
 
 h4. soo_obj
 
-Super-parent abstract base class, with no properties and just a few low-level methods. Has @__get()@ as a generic getter, and a @__call()@ which will work as a generic setter for calls in the form @set_property($value)@, replacing "property" with an existing property name.
+Abstract base class, with no properties and just a few low-level methods. Has @__get()@ as a generic getter, and a @__call()@ which will work as a generic setter for calls in the form @property($value)@.
 
-h4. Soo_Txp_Data
+h4. soo_txp_query
 
-This is the abstract base class for building queries and retrieving records from the Txp database. The class has been extended for several Txp tables, and it is easy to extend it to cover any table you need to work with.
+Abstract base class for building queries. Currently extended to soo_txp_select for making @SELECT@ calls; would be easy to extend to additional child classes for @INSERT@, @UPDATE@, and @DELETE@ calls.
 
-h4. Soo_Html
+h4. soo_txp_row
 
-This is the abstract base class for building HTML tags. As with *Soo_Txp_Data*, it is easy to extend if the HTML element you need doesn't have its own class yet.
+Basic class for Txp database records (rows). If you give it an identifier (e.g., article ID) or *soo_txp_query* object on instantiation it will automatically populate the @data@ array. Has been extended to *soo_txp_img* which adds properties for full and thumbnail URL.
 
-h4. Soo_Txp_Uri
+h4. soo_txp_rowset
+
+For creating and dealing with groups of *soo_txp_row* objects. Given a *soo_txp_query* object or array of data records it will automatically populate the @rows@ array with *soo_txp_row* objects.
+
+h4. soo_html
+
+Abstract base class for building HTML tags. Currently extended to cover many, but by no means all, HTML elements.
+
+h4. soo_uri
 
 Intended for dealing with query string parameters, allowing you to set, add, or delete specific parameters while preserving the rest. Note that using this class to set parameters will also reset @$_SERVER['REQUEST_URI']@ and @$_SERVER['QUERY_STRING']@, while leaving the @$_GET@ and @$_POST@ arrays untouched.
 
-h3. _soo_echo()
-
-A bonus function (not attached to any class) for development. Feed it a variable and it will @echo()@ it, whether it is a simple string or number, an array, or an object -- or even a multi-dimensional array of objects or an object containing multi-dimensional arrays -- you get the idea. Different from the native @var_dump()@ function in that the format is easier to read in a standard browser window, and suppresses empty items by default.
-
 h2. Version history
+
+h3. 1.0.b.1
+
+* Major re-organization and re-write of most classes. 
+** The old *Soo_Txp_Data* family has been divided into separate classes for queries and data. 
+** There are no longer separate classes for each Txp table.
+** All class names now lowercase (these aren't case sensitive anyway).
+** Generic setting is now in the form @obj->property()@ instead of @obj->set_property()@.
+** Various renaming, code cleaning, etc.
 
 h3. 1.0.a.6
 
