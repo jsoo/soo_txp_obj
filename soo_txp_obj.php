@@ -18,9 +18,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-$plugin['version'] = '1.0.b.1';
+$plugin['version'] = '1.0.b.2';
 $plugin['author'] = 'Jeff Soo';
-$plugin['author_uri'] = 'http://ipsedixit.net/';
+$plugin['author_uri'] = 'http://ipsedixit.net/txp/';
 $plugin['description'] = 'Object classes for Txp plugins';
 $plugin['type'] = 2; 
 
@@ -84,7 +84,7 @@ abstract class soo_txp_query extends soo_obj {
 		'txp_lang'			=> 'id',
 		'txp_link'			=> 'id',
 		'txp_log'			=> 'id',
-		'txp_prefs'			=> 'prefs_id',
+//		'txp_prefs'			=> 'prefs_id',
 		'txp_users'			=> 'user_id',
 	);
 	protected $string_index		= array(
@@ -269,6 +269,45 @@ class soo_txp_select extends soo_txp_query {
 ////////////////////// end of class soo_txp_select /////////////////////////////
 
 
+class soo_txp_upsert extends soo_txp_query {
+	
+	public $set				= array();
+	protected $set_clause	= '';
+	
+	public function set( $column, $value ) {
+		$this->set[$column] = $value;
+		return $this;
+	}
+	
+	private function init_query() {
+		foreach ( $this->set as $col => $val ) {
+			$val = is_numeric($val) ? $val : "'$val'";
+			$set_pairs[] = "$col = $val";
+		}
+		$this->set_clause = implode(',', $set_pairs);
+	}
+			
+	public function upsert() {
+		$this->init_query();
+		return count($this->where) ?
+			safe_upsert($this->table, $this->set_clause, $this->clause_string())
+			:	
+			safe_insert($this->table, $this->set_clause);
+	}
+}
+////////////////////// end of class soo_txp_upsert /////////////////////////////
+
+
+class soo_txp_delete extends soo_txp_query {
+	
+	public function delete() {
+		if ( count($this->where) )
+			return safe_delete($this->table, $this->clause_string());
+	}
+}
+////////////////////// end of class soo_txp_delete /////////////////////////////
+
+
 class soo_txp_rowset extends soo_obj {
 
 	protected $table		= '';
@@ -282,10 +321,17 @@ class soo_txp_rowset extends soo_obj {
 		}
 		$this->table = $table;
 		foreach ( $init as $r )
-			if ( isset($index) )
+			if ( isset($index) ) 
 				$this->add_row($r, $table, $r[$index]);
 			else
 				$this->add_row($r, $table);
+	}
+	
+	public function __get( $property ) {
+		if ( property_exists($this, $property) )
+			return $this->$property;
+		if ( array_key_exists($property, $this->rows) )
+			return $this->rows[$property];
 	}
 
 	public function field_vals( $field, $key = null ) {
@@ -456,7 +502,7 @@ abstract class soo_html extends soo_obj {
 		if ( $this->is_empty )
 			return $out . ' />';
 					
-		$out .= '>';
+		$out .= '>' . ( $this->is_block ? n : '');
 				
 		foreach ( $this->contents as $item )
 			
@@ -508,6 +554,24 @@ class soo_html_br extends soo_html {
 	public function __construct ( $atts = array() ) {
 		parent::__construct( 'br', $atts );
 		$this->is_empty(true)->is_block(false);
+	}
+}
+
+class soo_html_form extends soo_html {
+	
+	protected $action			= '';
+	protected $method			= '';
+	protected $enctype			= '';
+	protected $accept_charset	= '';
+	protected $onsubmit			= '';
+	protected $onreset			= '';
+
+	public function __construct ( $init = array(), $content = '' ) {
+		$atts = is_string($init) ? array('action' => $init) : $init;
+		if ( ! isset($atts['method']) )
+			$atts['method'] = 'post';
+		parent::__construct( 'form', $atts, $content );
+		$this->is_empty(false)->is_block(true);
 	}
 }
 
@@ -687,6 +751,26 @@ class soo_html_span extends soo_html {
 	}
 }
 
+/////////////////////// MLP Pack compatibility //////////////////////////
+// MLP Pack manipulates $_SERVER['REQUEST_URI'], so grab it first
+
+global $plugin_callback;
+if( is_array($plugin_callback) 
+	and $plugin_callback[0]['function'] == '_l10n_pretext' )
+		array_unshift($plugin_callback, array(
+			'function'	=>	'soo_uri_mlp', 
+			'event'		=>	'pretext', 
+			'step'		=>	'', 
+			'pre'		=>	0 )
+		);
+
+function soo_uri_mlp() {
+	global $soo_request_uri;
+	$soo_request_uri =  $_SERVER['REQUEST_URI'];
+}
+/////////////////////// end MLP Pack compatibility //////////////////////
+
+
 class soo_uri extends soo_obj {
 	
 	protected $full;
@@ -695,7 +779,10 @@ class soo_uri extends soo_obj {
 	protected $query_params;
 
 	public function __construct ( ) {
-		$this->request_uri = $_SERVER['REQUEST_URI'];
+		
+		global $soo_request_uri;		
+		$this->request_uri = $soo_request_uri ? $soo_request_uri :
+			$_SERVER['REQUEST_URI'];
 		$this->query_string = $_SERVER['QUERY_STRING'];
 		$this->full = preg_replace('/\/$/', '', hu) . $this->request_uri;
 		$this->query_params = $_GET;
@@ -804,6 +891,17 @@ h4. soo_uri
 Intended for dealing with query string parameters, allowing you to set, add, or delete specific parameters while preserving the rest. Note that using this class to set parameters will also reset @$_SERVER['REQUEST_URI']@ and @$_SERVER['QUERY_STRING']@, while leaving the @$_GET@ and @$_POST@ arrays untouched.
 
 h2. Version history
+
+h3. 1.0.b.2
+
+9/16/2009
+
+* New callback function for MLP Pack compatibility with *soo_uri*
+* New classes: 
+** soo_txp_upsert for SQL insert/update statements
+** soo_txp_delete for SQL delete statements
+** soo_html_form for form elements
+* soo_txp_rowset overrides parent::__get() method
 
 h3. 1.0.b.1
 
