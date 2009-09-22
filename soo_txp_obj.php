@@ -84,7 +84,6 @@ abstract class soo_txp_query extends soo_obj {
 		'txp_lang'			=> 'id',
 		'txp_link'			=> 'id',
 		'txp_log'			=> 'id',
-//		'txp_prefs'			=> 'prefs_id',
 		'txp_users'			=> 'user_id',
 	);
 	protected $string_index		= array(
@@ -785,7 +784,7 @@ class soo_uri extends soo_obj {
 			$_SERVER['REQUEST_URI'];
 		$this->query_string = $_SERVER['QUERY_STRING'];
 		$this->full = preg_replace('/\/$/', '', hu) . $this->request_uri;
-		$this->query_params = $_GET;
+		parse_str($this->query_string, $this->query_params);
 	}
 	
 	public function __call( $request, $args ) {
@@ -891,6 +890,12 @@ h4. soo_uri
 Intended for dealing with query string parameters, allowing you to set, add, or delete specific parameters while preserving the rest. Note that using this class to set parameters will also reset @$_SERVER['REQUEST_URI']@ and @$_SERVER['QUERY_STRING']@, while leaving the @$_GET@ and @$_POST@ arrays untouched.
 
 h2. Version history
+
+h3. 1.0.b.3
+
+9/22/2009
+
+* *soo_uri* now gets query params by parsing $_SERVER['QUERY_STRING'] instead of $_GET
 
 h3. 1.0.b.2
 
