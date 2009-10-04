@@ -18,7 +18,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-$plugin['version'] = '1.0.b.3';
+$plugin['version'] = '1.0.b.4';
 $plugin['author'] = 'Jeff Soo';
 $plugin['author_uri'] = 'http://ipsedixit.net/txp/';
 $plugin['description'] = 'Object classes for Txp plugins';
@@ -783,7 +783,7 @@ class soo_uri extends soo_obj {
 		$this->request_uri = $soo_request_uri ? $soo_request_uri :
 			$_SERVER['REQUEST_URI'];
 		$this->query_string = $_SERVER['QUERY_STRING'];
-		$this->full = preg_replace('/\/$/', '', hu) . $this->request_uri;
+		$this->full = preg_replace('/\/$/', '', hu) . $this->request_uri();
 		parse_str($this->query_string, $this->query_params);
 	}
 	
@@ -804,13 +804,22 @@ class soo_uri extends soo_obj {
 		$this->query_string = http_build_query($this->query_params);
 		$this->request_uri = self::strip_query($this->request_uri) . 
 			( $this->query_string ? '?' . $this->query_string : '' );
-		$this->full = preg_replace('/\/$/', '', hu) . $this->request_uri;
+		$this->full = preg_replace('/\/$/', '', hu) . $this->request_uri();
 		$_SERVER['QUERY_STRING'] = $this->query_string;
 		$_SERVER['REQUEST_URI'] = $this->request_uri;
 	}
 	
 	public function strip_query ( $uri ) {
 		return preg_replace ('/(.+)\?.+/', '$1', $uri);
+	}
+	
+		// for sub-dir installations, strip the sub-dir
+	private function request_uri ( ) {
+		if ( preg_match('&://[^/]+(/.+)/$&', hu, $match) ) {
+			$sub_dir = $match[1];
+			return substr($this->request_uri, strlen($sub_dir));
+		}
+		return $this->request_uri;
 	}
 
 }
@@ -890,6 +899,12 @@ h4. soo_uri
 Intended for dealing with query string parameters, allowing you to set, add, or delete specific parameters while preserving the rest. Note that using this class to set parameters will also reset @$_SERVER['REQUEST_URI']@ and @$_SERVER['QUERY_STRING']@, while leaving the @$_GET@ and @$_POST@ arrays untouched.
 
 h2. Version history
+
+h3. 1.0.b.4
+
+10/3/2009
+
+* *soo_uri* updated for correct behavior in Txp sub-dir installations
 
 h3. 1.0.b.3
 
