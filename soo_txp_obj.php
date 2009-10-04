@@ -870,49 +870,49 @@ Suggestions and corrections gladly accepted. "Email the author &rarr;":http://ip
 
 This is a very minimal guide. More information and examples are available "here":http://ipsedixit.net/txp/21/soo-txp-obj.
 
-h3. Classes
+h3(#classes). Classes
 
 All the classes extend the *soo_obj* base class. Most of the classes fall into three families: queries, data records, and HTML element classes. Another class, soo_uri, is for handling URI query strings.
 
-h4. soo_obj
+h4(#soo_obj). soo_obj
 
 Abstract base class, with no properties and just a few low-level methods. Has @__get()@ as a generic getter, and a @__call()@ which will work as a generic setter for calls in the form @property($value)@.
 
-h4. soo_txp_query
+h4(#soo_txp_query). soo_txp_query
 
 Abstract base class for building queries. Currently extended to soo_txp_select for making @SELECT@ calls; would be easy to extend to additional child classes for @INSERT@, @UPDATE@, and @DELETE@ calls.
 
-h4. soo_txp_row
+h4(#soo_txp_row). soo_txp_row
 
 Basic class for Txp database records (rows). If you give it an identifier (e.g., article ID) or *soo_txp_query* object on instantiation it will automatically populate the @data@ array. Has been extended to *soo_txp_img* which adds properties for full and thumbnail URL.
 
-h4. soo_txp_rowset
+h4(#soo_txp_rowset). soo_txp_rowset
 
 For creating and dealing with groups of *soo_txp_row* objects. Given a *soo_txp_query* object or array of data records it will automatically populate the @rows@ array with *soo_txp_row* objects.
 
-h4. soo_html
+h4(#soo_html). soo_html
 
 Abstract base class for building HTML tags. Currently extended to cover many, but by no means all, HTML elements.
 
-h4. soo_uri
+h4(#soo_uri). soo_uri
 
 Intended for dealing with query string parameters, allowing you to set, add, or delete specific parameters while preserving the rest. Note that using this class to set parameters will also reset @$_SERVER['REQUEST_URI']@ and @$_SERVER['QUERY_STRING']@, while leaving the @$_GET@ and @$_POST@ arrays untouched.
 
-h2. Version history
+h2(#history). Version history
 
-h3. 1.0.b.4
+h3(#b4). 1.0.b.4
 
 10/3/2009
 
 * *soo_uri* updated for correct behavior in Txp sub-dir installations
 
-h3. 1.0.b.3
+h3(#b3). 1.0.b.3
 
 9/22/2009
 
 * *soo_uri* now gets query params by parsing $_SERVER['QUERY_STRING'] instead of $_GET
 
-h3. 1.0.b.2
+h3(#b2). 1.0.b.2
 
 9/16/2009
 
@@ -923,7 +923,7 @@ h3. 1.0.b.2
 ** soo_html_form for form elements
 * soo_txp_rowset overrides parent::__get() method
 
-h3. 1.0.b.1
+h3(#b1). 1.0.b.1
 
 * Major re-organization and re-write of most classes. 
 ** The old *Soo_Txp_Data* family has been divided into separate classes for queries and data. 
@@ -932,7 +932,7 @@ h3. 1.0.b.1
 ** Generic setting is now in the form @obj->property()@ instead of @obj->set_property()@.
 ** Various renaming, code cleaning, etc.
 
-h3. 1.0.a.6
+h3(#a6). 1.0.a.6
 
 6/2/2009
 
@@ -942,32 +942,32 @@ What the heck, time to use the same naming convention I'm using with other plugi
 * *Soo_Html_P* and *soo_html_th* can now have contents set during instantiation. Note that this will break compatibility with some previous uses, e.g. @new Soo_Html_P($atts)@.
 * Added @$in@ argument to @where_in()@ method (*Soo_Txp_Data*) to allow "NOT IN" queries
 
-h3. 1.0.a5
+h3(#a5). 1.0.a5
 
 5/13/2009
 
 * Corrected SQL syntax in @order_by_field()@ function of @Soo_Txp_Data@ class
 * Modified @tag()@ function of @Soo_Html@ class to handle a PHP 5.2.0 bug
 
-h3. 1.0.a4
+h3(#a4). 1.0.a4
 
 5/1/2009
 
 Added @count()@ and @field()@ methods to the abstract @Soo_Txp_Data@ class.
 
-h3. 1.0.a3
+h3(#a3). 1.0.a3
 
 2/19/2009
 
 Added "Expires" property to @Soo_Txp_Article@ and "load_order" property to @Soo_Txp_Plugin@. These fields were added in Textpattern version 4.0.7.
 
-h3. 1.0.a2
+h3(#a2). 1.0.a2
 
 2/5/2009
 
 No significant changes, but added generic getters and setters (thanks to *jm* for the hint), making the file about 35% smaller.
 
-h3. 1.0.a1
+h3(#a1). 1.0.a1
 
 2/4/2009
 
