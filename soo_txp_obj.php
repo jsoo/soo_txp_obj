@@ -18,7 +18,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-$plugin['version'] = '1.0.b.4';
+$plugin['version'] = '1.0.b.5';
 $plugin['author'] = 'Jeff Soo';
 $plugin['author_uri'] = 'http://ipsedixit.net/txp/';
 $plugin['description'] = 'Object classes for Txp plugins';
@@ -113,6 +113,12 @@ abstract class soo_txp_query extends soo_obj {
 		$join = $this->andor($join);
 		$this->where[] = ( $join ? $join . ' ' : '' ) . 
 			self::quote($column) . ' ' . $operator . " '" . $value . "'";
+		return $this;
+	}
+	
+	function where_clause( $clause, $join = '' ) {
+		$join = $this->andor($join);
+		$this->where[] = ( $join ? $join . ' ' : '' ) . $clause;
 		return $this;
 	}
 	
@@ -506,7 +512,8 @@ abstract class soo_html extends soo_obj {
 		foreach ( $this->contents as $item )
 			
 			if ( $item instanceof soo_html )
-				$out .= $item->tag() . n;		// recursion ...
+				$out .= $item->tag() . ( $item->is_block ? n : '');		
+					// recursion ...
 				
 			else
 				$out .= $item;
@@ -899,6 +906,13 @@ h4(#soo_uri). soo_uri
 Intended for dealing with query string parameters, allowing you to set, add, or delete specific parameters while preserving the rest. Note that using this class to set parameters will also reset @$_SERVER['REQUEST_URI']@ and @$_SERVER['QUERY_STRING']@, while leaving the @$_GET@ and @$_POST@ arrays untouched.
 
 h2(#history). Version history
+
+h3(#b5). 1.0.b.5
+
+1/27/2010
+
+* new method: @where_clause()@ in *soo_txp_query*, a catch-all for complex clauses
+* minor HTML formatting change to @tag()@ method in *soo_html*
 
 h3(#b4). 1.0.b.4
 
