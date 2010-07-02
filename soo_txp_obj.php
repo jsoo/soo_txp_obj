@@ -18,7 +18,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-$plugin['version'] = '1.0.b.5';
+$plugin['version'] = '1.0.b.6';
 $plugin['author'] = 'Jeff Soo';
 $plugin['author_uri'] = 'http://ipsedixit.net/txp/';
 $plugin['description'] = 'Object classes for Txp plugins';
@@ -832,6 +832,23 @@ class soo_uri extends soo_obj {
 }
 /////////////////////// end of class soo_uri ////////////////////////////
 
+class soo_util {	// miscellaneous static utilty methods
+	
+	public static function txp_tag ( $func, $atts = array(), $thing = null ) {
+		$a = '';
+		foreach ( $atts as $k => $v )
+			$a .= " $k=\"$v\"";
+		return "<txp:$func$a" . ( is_null($thing) ? ' />' : ">$thing</txp:$func>" );		
+	}
+	
+	public static function secondpass ( $func, $atts = array(), $thing = null ) {
+		global $pretext;
+		if ( $pretext['secondpass'] ) return; // you only live twice
+		return self::txp_tag($func, $atts, $thing);
+	}
+		
+}
+
 # --- END PLUGIN CODE ---
 
 if (0) {
@@ -879,7 +896,7 @@ This is a very minimal guide. More information and examples are available "here"
 
 h3(#classes). Classes
 
-All the classes extend the *soo_obj* base class. Most of the classes fall into three families: queries, data records, and HTML element classes. Another class, soo_uri, is for handling URI query strings.
+All the classes (except "soo_util":#soo_util) extend the "soo_obj":#soo_obj base class. Most of the classes fall into three families: queries, data records, and HTML element classes. Another class, soo_uri, is for handling URI query strings.
 
 h4(#soo_obj). soo_obj
 
@@ -905,7 +922,17 @@ h4(#soo_uri). soo_uri
 
 Intended for dealing with query string parameters, allowing you to set, add, or delete specific parameters while preserving the rest. Note that using this class to set parameters will also reset @$_SERVER['REQUEST_URI']@ and @$_SERVER['QUERY_STRING']@, while leaving the @$_GET@ and @$_POST@ arrays untouched.
 
+h4(#soo_util). soo_util
+
+Miscellaneous class for static utility methods.
+
 h2(#history). Version history
+
+h3(#b6). 1.0.b.6
+
+7/1/2010
+
+* New class: soo_util, for static utility methods
 
 h3(#b5). 1.0.b.5
 
