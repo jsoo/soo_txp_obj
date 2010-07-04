@@ -18,7 +18,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-$plugin['version'] = '1.0.b.6';
+$plugin['version'] = '1.0.b.7';
 $plugin['author'] = 'Jeff Soo';
 $plugin['author_uri'] = 'http://ipsedixit.net/txp/';
 $plugin['description'] = 'Object classes for Txp plugins';
@@ -593,6 +593,13 @@ class soo_html_img extends soo_html {
 		if ( $init instanceof soo_txp_img ) {
 			$src = $thumbnail ? $init->thumb_url : $init->full_url;
 			$init = $init->properties();
+			if ( $thumbnail ) {
+				if ( ! empty($init['thumb_h']) ) { // pre Txp 4.2 compatibility
+					$init['h'] = $init['thumb_h'];
+					$init['w'] = $init['thumb_w'];
+				}
+				else $init['h'] = ( $init['w'] = 0 );
+			}
 			$init['height'] = $init['h'];
 			$init['width'] = $init['w'];
 			$init['title'] = $init['caption'];
@@ -927,6 +934,12 @@ h4(#soo_util). soo_util
 Miscellaneous class for static utility methods.
 
 h2(#history). Version history
+
+h3(#b7). 1.0.b.7
+
+7/4/2010 (USA Independence Day)
+
+* *soo_html_img* now adds thumbnail @height@ and @width@ attributes (Txp 4.2.0 or later)
 
 h3(#b6). 1.0.b.6
 
