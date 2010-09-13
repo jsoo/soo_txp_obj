@@ -1,81 +1,97 @@
 <?php
-
-// soo_txp_ojb
-//
-// A library for writing object-oriented Textpattern code.
-// Copyright 2009 Jeff Soo. 
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 2 of the License, or
-// (at your option) any later version.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// 
-// You should have received a copy of the GNU General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-$plugin['version'] = '1.0.b.7';
-$plugin['author'] = 'Jeff Soo';
-$plugin['author_uri'] = 'http://ipsedixit.net/txp/';
-$plugin['description'] = 'Object classes for Txp plugins';
+/** @mainpage notitle
+ *  <p><a href="http://ipsedixit.net/txp/21/soo-txp-obj">soo_txp_obj</a> is a support library for <a href="http://textpattern.com/">Textpattern</a> plugins. 
+ *  <p>It includes classes for building and running queries, handling results sets, building HTML output, and manipulating URI query strings.
+ *  <p><small>This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 2 of the License, or
+ *  (at your option) any later version.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <a href="http://www.opensource.org/licenses/lgpl-2.1.php">http://www.opensource.org/licenses/lgpl-2.1.php</a>.</small>
+ *  @author Copyright 2009&ndash;2010 <a href="http://ipsedixit.net/info/2/contact">Jeff Soo</a>
+ *  @version 1.0.b.9
+ *  @sa <a href="http://ipsedixit.net/txp/21/soo-txp-obj">soo_txp_obj Developer Guide</a>
+ */
+$plugin['name'] = 			'soo_txp_obj';
+$plugin['description'] = 	'Support library for Txp plugins';
+$plugin['version'] = 		'1.0.b.9';
+$plugin['author'] = 		'Jeff Soo';
+$plugin['author_uri'] = 	'http://ipsedixit.net/txp/';
 $plugin['type'] = 2; 
-
 @include_once('zem_tpl.php');
 
 # --- BEGIN PLUGIN CODE ---
 
-
-  //---------------------------------------------------------------------//
- //									Classes								//
-//---------------------------------------------------------------------//
-
-abstract class soo_obj {
-// Root class for all Soo_Txp_* classes
-// low-level utility methods
-
-	public function __get( $property ) {
+/// Generic abstract base class, with a few low-level utility methods. 
+abstract class soo_obj
+{
+	/** Generic getter.
+	 *  Allow calls in the form $obj->property for protected properties.
+	 */
+	public function __get( $property )
+	{
 		return isset($this->$property) ? $this->$property : null;
 	}
 	
-	public function __call( $request, $args ) {
+	/** Method overloading for generic setters.
+	 *  Allow calls in the form $obj->property($value).
+	 *  Returns $this to allow method chaining.
+	 */
+	public function __call( $request, $args )
+	{
 		if ( isset($this->$request) )
-			$this->$request = array_pop($args);
+			$this->$request = array_shift($args);
 		return $this;
 	}
 	
-	public function __toString() {
+	/** Return an object's class name.
+	 *  Allows object to be used in a string context.
+	 *  @return string Class name
+	 */
+	public function __toString()
+	{
 		return get_class($this);
 	}
 	
-	public function properties() {
-	// returns an object's properties as an associative array
+	/** Return an object's properties as an associative array.
+	 *  @return array
+	 */
+	public function properties()
+	{
 		foreach ( $this as $property => $value )
 			$out[$property] = $value;
 		return $out;
 	}
 	
-	public function property_names() {
-	// returns an object's property names as an indexed array
+	/** Return an object's properties as an indexed array.
+	 *  @return array
+	 */
+	public function property_names()
+	{
 		return array_keys($this->properties());
 	}
 	
 }
-////////////////////// end of class soo_obj ////////////////////////////////
 
-
-abstract class soo_txp_query extends soo_obj {
-	
+/// Abstract base class for SQL queries.
+abstract class soo_txp_query extends soo_obj
+{
+	/// Database table name.
 	protected $table		= '';
+	/// SQL WHERE expressions.
 	protected $where		= array();
+	/// SQL ORDER BY expressions.
 	protected $order_by		= array();
+	/// SQL LIMIT.
 	protected $limit		= 0;
+	/// SQL OFFSET.
 	protected $offset		= 0;
 	
-	protected $numeric_index	= array(
+	private $numeric_index	= array(
 		'textpattern'		=> 'ID',
 		'txp_category'		=> 'id',
 		'txp_discuss'		=> 'discussid',
@@ -86,7 +102,7 @@ abstract class soo_txp_query extends soo_obj {
 		'txp_log'			=> 'id',
 		'txp_users'			=> 'user_id',
 	);
-	protected $string_index		= array(
+	private $string_index		= array(
 		'textpattern'		=> 'Title',
 		'txp_category'		=> 'name',
 		'txp_css'			=> 'name',
@@ -103,26 +119,53 @@ abstract class soo_txp_query extends soo_obj {
 		'txp_users'			=> 'name',
 	);
 	
-	function __construct( $table, $key = null ) {
+	/** Constructor.
+	 *  Use $key to match a single row matching on appropriate key column
+	 *  (usually `name` or `id`)
+	 *  @param table Table name
+	 *  @param key Key column value for WHERE expression
+	 */
+	public function __construct( $table, $key = null )
+	{
 		$this->table = trim($table);
 		if ( $key )
 			$this->where($this->key_column($key), $key);
 	}
-
-	function where( $column, $value, $operator = '=', $join = '' ) {
+	
+	/** Add expression to WHERE clause.
+	 *  @param column Column name
+	 *  @param value Column value
+	 *  @param operator Comparison operator
+	 *  @param join AND or OR
+	 */
+	public function where( $column, $value, $operator = '=', $join = '' )
+	{
 		$join = $this->andor($join);
 		$this->where[] = ( $join ? $join . ' ' : '' ) . 
 			self::quote($column) . ' ' . $operator . " '" . $value . "'";
 		return $this;
 	}
 	
-	function where_clause( $clause, $join = '' ) {
+	/** Add a raw expression to WHERE clause.
+	 *  Use instead of {@link where()} for complex (e.g. nested) expressions
+	 *  @param clause WHERE Expression
+	 *  @param join AND or OR
+	 */
+	public function where_clause( $clause, $join = '' )
+	{
 		$join = $this->andor($join);
 		$this->where[] = ( $join ? $join . ' ' : '' ) . $clause;
 		return $this;
 	}
 	
-	function in( $column, $list, $join = '', $in = true ) {
+	/** Add an IN expression to the WHERE clause.
+	 *  @param column Column name
+	 *  @param list Items to compare against
+	 *  @param join AND or OR
+	 *  @param in true = IN, false = NOT IN
+	 */
+	public function in( $column, $list, $join = '', $in = true )
+	{
 		$in = ( $in ? '' : ' not' ) . ' in (';
 		if ( is_string($list) ) $list = do_list($list);
 		$join = $this->andor($join);
@@ -131,218 +174,541 @@ abstract class soo_txp_query extends soo_obj {
 		return $this;
 	}
 	
-	function not_in( $column, $list, $join = '' ) {
+	/** Alias of in() with $in = false (add a NOT IN expression).
+	 *  @param column Column name
+	 *  @param list Items to compare against
+	 *  @param join AND or OR
+	 */
+	public function not_in( $column, $list, $join = '' )
+	{
 		return $this->in( $column , $list , $join , false );
 	}
 	
-	function regexp( $pattern, $subject, $join = '' ) {
+	/** Add a MySQL REGEXP expression to the WHERE clause.
+	 *  @param pattern MySQL REGEXP pattern
+	 *  @param subject Column name or string to match
+	 *  @param join AND or OR
+	 */
+	public function regexp( $pattern, $subject, $join = '' )
+	{
 		$join = $this->andor($join);
 		$this->where[] = ( $join ? $join . ' ' : '' ) . 
 			self::quote($subject) . " regexp '" . $pattern . "'";
 		return $this;
 	}
 	
-	private function andor( $join = 'and' ) {
+	protected function andor( $join = 'and' )
+	{
 		$join = strtolower($join);
 		return count($this->where) ? 
 			( in_list($join, 'and,or') ? $join : 'and' ) : '';
 	}
 	
-	function quote( $identifier ) {
-	// quote with backticks only if $identifier consists only of alphanumerics, $, or _
+	/** Quote with backticks.
+	 *  Only quote items consisting of alphanumerics, $, and/or _
+	 *  @param identifier Item to quote
+	 *  @return string
+	 */
+	public static function quote( $identifier )
+	{
 		return preg_match('/^[a-z_$\d]+$/i', $identifier) ?
-			'`' . $identifier . '`' : $identifier;
+			"`$identifier`" : $identifier;
 	}
-		
-	function order_by( $expr, $direction = '' ) {
-		
-		if ( $expr ) {
-			
-			if ( is_array($expr) )
-				$expr = array_map('strtolower', $expr);
-			
-			if ( is_string($expr) )
-				$expr = do_list(strtolower($expr));
-			
-			foreach ( $expr as $x ) {
-				
-				if ( preg_match('/(\S+)\s+(\S+)/', $x, $match) ) {
-					$column = $match[1];
-					$direction = $match[2];
-				}
+	
+	/** Add an expression to the ORDER BY array.
+	 *  Example: $query->order_by('foo ASC, bar DESC');
+	 *  @param expr Comma-separated list, or array, of expressions
+	 *  @param direction ASC or DESC
+	 */
+	public function order_by( $expr, $direction = '' )
+	{
+		if ( $expr )
+		{
+			if ( ! is_array($expr) ) $expr = do_list($expr);
+			foreach ( $expr as $x )
+			{
+				if ( preg_match('/(\S+)\s+(\S+)/', $x, $match) )
+					list( , $column, $direction) = $match;
 				else
 					$column = $x;
-			
-				if ( $column == 'random' or $column == 'rand' or $column == 'rand()' ) {
+				if ( in_array(strtolower($column), array('random', 'rand', 'rand()')) )
 					$column = 'rand()';
-					$direction = '';
-				}
 				else 
-					$direction = in_array($direction, array('asc', 'desc')) ?
-						$direction : '';
-					
+					$direction = in_array(strtolower($direction), array('asc', 'desc')) ? $direction : '';
 				$this->order_by[] = $column . ( $direction ? ' ' . $direction : '');
 			}
 		}
-		
 		return $this;
 	}
 	
-	function asc( $col ) {
-		$this->order_by($col, 'asc');
-		return $this;
+	/** Alias of order_by() for a single column ASC.
+	 *  @param col Column name
+	 */
+	public function asc( $col )
+	{
+		return $this->order_by($col, 'asc');
 	}
 
-	function desc( $col ) {
-		$this->order_by($col, 'desc');
-		return $this;
+	/** Alias of order_by() for a single column DESC.
+	 *  @param col Column name
+	 */
+	public function desc( $col )
+	{
+		return $this->order_by($col, 'desc');
 	}
 	
-	function order_by_field( $field, $list ) { // for preserving arbitrary order
+	/** Add a FIELD() expression to the ORDER BY array.
+	 *  For preserving an arbitrary sort order, e.g. '7,5,12,1'
+	 *  Note that FIELD() is a MySQL-specific function (not standard SQL)
+	 *  @param field Column name
+	 *  @param list Comma-separated list, or array, of values in order
+	 */
+	public function order_by_field( $field, $list )
+	{
 		if ( is_string($list) ) $list = do_list($list);
-		if ( count($list) > 1 )
-			$this->order_by[] = 'field(' . $field . ', ' .
+		if ( count($list) )
+			$this->order_by[] = 'field(' . self::quote($field) . ', ' .
 				implode(', ', quote_list(doSlash($list))) . ')';
-	}
-	
-	function limit( $limit ) {
-		if ( is_numeric($limit) and $limit > 0 )
-			$this->limit = ' limit ' . intval($limit);
 		return $this;
 	}
 	
-	function offset( $offset ) {
-		if ( is_numeric($offset) and $offset > 0 )
-			$this->offset = ' offset ' . intval($offset);
+	/** Add a LIMIT to the query.
+	 *  @param limit Maximum number of items to return
+	 */
+	public function limit( $limit )
+	{
+		if ( $limit = intval($limit) )
+			$this->limit = ' limit ' . $limit;
 		return $this;
 	}
 	
-	protected function clause_string() {
+	/** Add an OFFSET to the query.
+	 *  @param offset Number of items to skip
+	 */
+	public function offset( $offset )
+	{
+		if ( $offset = intval($offset) )
+			$this->offset = ' offset ' . $offset;
+		return $this;
+	}
+	
+	/** Assemble and return the query clauses as a string.
+	 *  @return string
+	 */
+	protected function clause_string()
+	{
 		return implode(' ', $this->where) .
 			( count($this->order_by) ? ' order by ' . implode(', ', $this->order_by) : '' ) .
 			( $this->limit ? $this->limit : '' ) . ( $this->offset ? $this->offset : '' );
 	}
-
-	public function count() {
-		return getCount($this->table, $this->clause_string() ? 
-			$this->clause_string() : '1=1'
-		);
+	
+	/** Number of items the query will return.
+	 *  Runs the query with COUNT() as the select expression
+	 *  @return int|false
+	 */
+	public function count()
+	{
+		return getCount($this->table, $this->clause_string() ? $this->clause_string() : '1=1');
 	}
-
-	function key_column( $key_value = null ) {
-		if ( is_numeric($key_value) )
-			return $this->numeric_index[$this->table];
-		if ( is_string($key_value) )
-			return $this->string_index[$this->table];
+	
+	/** Return the key column name for the current table.
+	 *  Some Txp tables have multiple indexes. 
+	 *  If $key_value is provided, column of the matching type will be returned.
+	 *  Otherwise the numeric index will be returned in preference to the string index.
+	 *  @param key_value
+	 *  @return string
+	 */
+	public function key_column( $key_value = null )
+	{
 		if ( isset($this->numeric_index[$this->table]) )
-			return $this->numeric_index[$this->table];
-		return $this->string_index[$this->table];
+			$nx = $this->numeric_index[$this->table];
+		if ( isset($this->string_index[$this->table]) )
+			$sx = $this->string_index[$this->table];
+			
+ 		if ( is_numeric($key_value) )
+			return isset($nx) ? $nx : null;
+ 		if ( is_string($key_value) )
+			return isset($sx) ? $sx : null;
+		return isset($nx) ? $nx : ( isset($sx) ? $sx : null );
 	}
 	
 }
-////////////////////// end of class soo_txp_query ////////////////////////////
 
-
-class soo_txp_select extends soo_txp_query {
+/// Class for SELECT queries.
+class soo_txp_select extends soo_txp_query
+{
 	
+	/// SQL SELECT expressions.
 	protected $select		= array();
 	
-	function select( $list = '*' ) {
+	/** Add items to the SELECT array.
+	 *  @param list	comma-separated list, or array, of items to select
+	 */
+	public function select( $list = '*' )
+	{
 		if ( is_string($list) ) $list = do_list($list);
-		foreach ( $list as $col ) $this->select[] = parent::quote($col);
+		foreach ( $list as $col ) $this->select[] = $this->quote($col);
 		return $this;
 	}
 	
-	private function init_query() {
+	protected function init_query()
+	{
 		if ( ! count($this->select) ) $this->select();
 		if ( ! count($this->where) ) $this->where[] = '1 = 1';
 	}
 	
-	public function row() {
+	/** Return a single record, or empty array if no matching records.
+	 *  @return array
+	 */
+	public function row()
+	{
 		$this->init_query();
 		return safe_row(implode(',', $this->select), $this->table, 
 			$this->clause_string());
 	}
 	
-	public function rows() {
+	/** Return all records, or empty array if no matching records.
+	 *  @return array
+	 */
+	public function rows()
+	{
 		$this->init_query();
 		return safe_rows(implode(',', $this->select), $this->table, 
 			$this->clause_string());
 	}
 	
 }
-////////////////////// end of class soo_txp_select /////////////////////////////
 
-
-class soo_txp_upsert extends soo_txp_query {
+/// Class for SELECT ... LEFT JOIN queries.
+/// Currently very incomplete; needs to override most parent methods
+/// to specify which table each expression refers to.
+class soo_txp_left_join extends soo_txp_select
+{
+	/// Join table name
+	protected $left_join;
+	/// ON expression for join
+	protected $join_on;
+	/// Left table alias
+	const t1 = 't1';
+	/// Join table alias
+	const t2 = 't2';
 	
+	/** Constructor.
+	 *  @param table Left table
+	 *  @param left_join Join table
+	 *  @param col1 Key column name for left table
+	 *  @param col2 Key column name for join table
+	 */
+	public function __construct ( $table, $left_join, $col1, $col2 )
+	{
+		parent::__construct($table);
+		$this->left_join = $left_join;
+		$this->join_on = self::t1 . '.' . self::quote($col1) . ' = ' . self::t2 . '.' . self::quote($col2);
+	}
+	
+	/** Like parent function, optionally prepending table name/alias.
+	 *  @example self::quote('col', self::t1) returns t1.`col`
+	 *  @param identifier Column name or alias
+	 *  @param prefix Table name or alias
+	 */
+	public static function quote( $identifier, $prefix = '' )
+	{
+		return ( $prefix ? $prefix . '.' : '' ) . parent::quote($identifier);
+	}
+	
+	/** Add items to the SELECT array from the left table.
+	 *  @param list	comma-separated list, or array, of items to select
+	 */
+	public function select( $list = '*' )
+	{
+		return self::select_from($list, self::t1);
+	}
+	
+	/** Add items to the SELECT array from the join table.
+	 *  @param list	comma-separated list, or array, of items to select
+	 */
+	public function select_join( $list = '*' )
+	{
+		return self::select_from($list, self::t2);
+	}
+
+	private function select_from( $list, $table )
+	{
+		if ( is_string($list) ) $list = do_list($list);
+		foreach ( $list as $col ) $this->select[] = self::quote($col, $table);
+		return $this;
+	}
+
+	/** Add expression to WHERE clause, referring to the left table.
+	 *  @param column Column name
+	 *  @param value Column value
+	 *  @param operator Comparison operator
+	 *  @param join AND or OR
+	 */
+	public function where( $column, $value, $operator = '=', $join = '' )
+	{
+		return parent::where(self::quote($column, self::t1), $value, $operator, $join);
+	}
+
+	/** Add expression to WHERE clause, referring to the join table.
+	 *  @param column Column name
+	 *  @param value Column value
+	 *  @param operator Comparison operator
+	 *  @param join AND or OR
+	 */
+	public function where_join( $column, $value, $operator = '=', $join = '' )
+	{
+		return parent::where(self::quote($column, self::t2), $value, $operator, $join);
+	}
+	
+	/** Add an IS NULL expression, for selecting only items not in the join table
+	 *  @param column Key column in join table
+	 */
+	public function where_join_null( $column )
+	{
+		$join = parent::andor('');
+		$this->where[] = ( $join ? $join . ' ' : '' ) . self::quote($column, self::t2) . ' is null';
+		return $this;
+	}
+
+	/** Add a column to the ORDER BY array.
+	 *  @param col Column name from left table
+	 *  @param direction ASC or DESC
+	 */
+	public function order_by( $cols, $direction = '' )
+	{
+		$direction = in_array(strtolower($direction), array('asc', 'desc')) ? $direction : '';
+		if ( is_string($cols) ) $cols = do_list($cols);
+		foreach ( $cols as $col )
+		{
+			if ( $col == 'random' or $col == 'rand' or $col == 'rand()' )
+			{
+				$col = 'rand()';
+				$direction = '';
+			}
+			$this->order_by[] = self::quote($col, self::t1) . ( $direction ? ' ' . $direction : '');
+		}
+		return $this;
+	}
+
+	/** Override parent function; return a single record.
+	 *  @return array
+	 */
+	public function row()
+	{
+		return getRow($this->sql());
+	}
+	
+	/** Override parent function; return all records
+	 *  @return array
+	 */
+	public function rows()
+	{
+		return getRows($this->sql());
+	}
+	
+	/** Assemble query.
+	 *  @return string
+	 */
+	public function sql()
+	{
+		parent::init_query();
+		return 'select ' . implode(',', $this->select) . ' from ' . self::quote($this->table) . ' as ' . self::t1 . ' left join ' . self::quote($this->left_join) . ' as ' . self::t2 . ' on ' . $this->join_on . ' where ' . $this->clause_string();
+	}
+	
+	/** Return result of a SELECT COUNT(*) query
+	 *  @int
+	 */
+	public function count()
+	{
+		$select = $this->select;
+		$this->select = array('count(*)');
+		$r = safe_query($this->sql());
+		$this->select = $select;
+		if ( $r )
+			return mysql_result($r, 0);
+	}
+}
+
+/// Class for INSERT and UPDATE queries.
+class soo_txp_upsert extends soo_txp_query
+{
+	// For use with VALUES() syntax
+	/// Columns to be explicitly set.
+	public $columns			= array();
+	/// VALUES() values.
+	public $values			= array();
+	/// VALUES() clause
+	protected $values_clause	= '';
+	
+	// For use with SET col_name=value syntax
+	/// SET columns and values.
 	public $set				= array();
+	/// SET clause.
 	protected $set_clause	= '';
 	
-	public function set( $column, $value ) {
+	/** Constructor.
+	 *  Use $col to update a single row matching on appropriate key column
+	 *  (usually `name` or `id`)
+	 *  @param init Table name, soo_txp_rowset, or soo_txp_row
+	 *  @param col Key column value for WHERE expression
+	 */
+	public function __construct( $init, $col = null )
+	{
+		if ( is_scalar($init) ) 
+			parent::__construct($init, $col);
+		elseif ( $init instanceof soo_txp_rowset )
+		{
+			$this->table = $init->table;
+			if ( $col )
+				$this->columns = is_array($col) ? $col : do_list($col);
+			else
+				$this->columns = array_keys(current($init->data));
+			foreach ( $init->rows as $r )
+				$this->values[] = $r->data;
+		}
+		elseif ( $init instanceof soo_txp_row )
+		{
+			$this->table = $init->table;
+			if ( $col )
+				$this->columns = is_array($col) ? $col : do_list($col);
+			else
+				$this->columns = array_keys($init->data);
+			$this->values[] = $init->data;
+		}
+	}
+
+	/** Add a column:value pair to the $set array.
+	 *  @param column Column name
+	 *  @param value Column value
+	 */
+	public function set( $column, $value )
+	{
 		$this->set[$column] = $value;
 		return $this;
 	}
 	
-	private function init_query() {
-		foreach ( $this->set as $col => $val ) {
-			$val = is_numeric($val) ? $val : "'$val'";
-			$set_pairs[] = "$col = $val";
+	private function init_query()
+	{
+		if ( count($this->set) )
+		{
+			foreach ( $this->set as $col => $val )
+			{
+				$val = is_numeric($val) ? $val : "'$val'";
+				$set_pairs[] = "$col = $val";
+			}
+			$this->set_clause = implode(',', $set_pairs);
 		}
-		$this->set_clause = implode(',', $set_pairs);
+		elseif ( count($this->values) )
+		{
+			if ( count($this->columns) )
+				$this->values_clause = '(`' . implode('`,`', $this->columns) . '`) ';
+			$this->values_clause .= ' values ';
+			foreach ( $this->values as $vs )
+			{
+				$this->values_clause .= '(';
+				foreach ( $vs as $v )
+					$this->values_clause .= ( is_numeric($v) ? $v : "'$v'" ) . ',';
+				$this->values_clause = rtrim($this->values_clause, ',') . '),';
+			}
+			$this->values_clause = rtrim($this->values_clause, ',') . ';';
+		}
 	}
-			
-	public function upsert() {
+	
+	/** Run the query.
+	 *  Runs an UPDATE query if $where is set, otherwise INSERT
+	 *  @return bool success or failure
+	 */
+	public function upsert()
+	{
 		$this->init_query();
-		return count($this->where) ?
-			safe_upsert($this->table, $this->set_clause, $this->clause_string())
-			:	
-			safe_insert($this->table, $this->set_clause);
+		if ( count($this->where) )
+			return safe_upsert($this->table, $this->set_clause, $this->clause_string());
+		if ( $this->set_clause )
+			return safe_insert($this->table, $this->set_clause);
+		if ( $this->values_clause )
+			return safe_query('insert into ' . safe_pfx($this->table) . $this->values_clause);
 	}
 }
-////////////////////// end of class soo_txp_upsert /////////////////////////////
 
-
-class soo_txp_delete extends soo_txp_query {
-	
-	public function delete() {
+/// Class for DELETE queries.
+class soo_txp_delete extends soo_txp_query
+{
+	/** Execute the DELETE query.
+	 *  @return bool	Query success or failure
+	 */
+	public function delete()
+	{
 		if ( count($this->where) )
 			return safe_delete($this->table, $this->clause_string());
 	}
 }
-////////////////////// end of class soo_txp_delete /////////////////////////////
 
+/// Class for data results sets.
+class soo_txp_rowset extends soo_obj
+{
 
-class soo_txp_rowset extends soo_obj {
-
+	/// Database table name.
 	protected $table		= '';
+	
+	/// Array of soo_txp_row objects.
 	public $rows			= array();
-
-	function __construct( $init = array(), $table = '' ) {
-		if ( $init instanceof soo_txp_select ) {
+	
+	/** Constructor.
+	 *  $init can be a soo_txp_select object, mysql result resource,
+	 *  or an array of records.
+	 *  If $index is provided or if $init is a soo_txp_select object, 
+	 *  the $rows array will be indexed by key column values.
+	 *  @param init Data array or query object to initialize rowset
+	 *  @param table Txp table name
+	 */
+	public function __construct( $init = array(), $table = '', $index = null )
+	{
+		if ( $init instanceof soo_txp_select )
+		{
 			$table = $init->table;
 			$index = $init->key_column();
 			$init = $init->rows();
 		}
+		if ( is_resource($init) and mysql_num_rows($init) )
+		{
+			while ( $r = mysql_fetch_assoc($init) )
+				$data[] = $r;
+			mysql_free_result($init);
+			$init = $data;
+		}
 		$this->table = $table;
-		foreach ( $init as $r )
-			if ( isset($index) ) 
-				$this->add_row($r, $table, $r[$index]);
-			else
-				$this->add_row($r, $table);
+		if ( is_array($init) and count($init) )
+		{
+			foreach ( $init as $r )
+				if ( $index ) 
+					$this->add_row($r, $table, $r[$index]);
+				else
+					$this->add_row($r, $table);
+		}
 	}
 	
-	public function __get( $property ) {
+	/** Generic getter, overriding parent method.
+	 *  If $property is not a property name, look for row object
+	 *  matching this index value
+	 *  @param property Property name, or rowset index
+	 */
+	public function __get( $property )
+	{
 		if ( property_exists($this, $property) )
 			return $this->$property;
 		if ( array_key_exists($property, $this->rows) )
 			return $this->rows[$property];
 	}
-
-	public function field_vals( $field, $key = null ) {
-	// if $key is set, returns an associative array
-	// otherwise returns an indexed array
 	
+	/** Return an array of all values for a particular column (field).
+	 *  If $key is set, make it an associative array, using the value
+	 *  of the key column as the array index
+	 *  @param field Column (field) name
+	 *  @param key Key column name
+	 */
+	public function field_vals( $field, $key = null )
+	{	
 		foreach ( $this->rows as $r )
 			if ( ! is_null($key) )
 				$out[$r->$key] = $r->$field;
@@ -351,7 +717,14 @@ class soo_txp_rowset extends soo_obj {
 		return isset($out) ? $out : array();
 	}
 	
-	private function add_row( $data, $table, $i = null ) {
+	/** Add a soo_txp_row object to $rows.
+	 *  @param data soo_txp_row object or key value
+	 *  @param table Txp table name
+	 *  @param i index value for new row in $rows array
+	 */
+	public function add_row( $data, $table = null, $i = null )
+	{
+		$table = is_null($table) ? $this->table : $table;
 		$r = $data instanceof soo_txp_row ? 
 			$data : ( $table == 'txp_image' ?
 				new soo_txp_img($data) : new soo_txp_row($data, $table) );
@@ -361,18 +734,132 @@ class soo_txp_rowset extends soo_obj {
 			$this->rows[$i] = $r;
 		return $this;
 	}
+	
+	/** Split off a subset of rows as a new soo_txp_rowset object
+	 *  @param key array key for finding rows for the new set
+	 *  @param value key column value to match for rows for the new set
+	 *  @param index array index for new rowset rows
+	 *  @return soo_txp_rowset
+	 */
+	public function subset( $key, $value, $index = null )
+	{
+		$out = new self;
+		foreach ( $this->rows as $row )
+			if ( $row->$key == $value )
+				$out->add_row($row, null, is_null($index) ? null : $row->$index);
+		return $out;
+	}
 }
-////////////////////// end of class soo_txp_rowset /////////////////////////////
 
-class soo_txp_row extends soo_obj {
+/// Class for Joe Celko nested sets, aka modified preorder tree
+class soo_nested_set extends soo_txp_rowset
+{
+	/** Constructor.
+	 *  $init can be a soo_txp_rowset object, 
+	 *  otherwise see parent::__construct()
+	 *  @param init Data array or query object to initialize rowset
+	 *  @param table Txp table name
+	 */
+	public function __construct( $init = array(), $table = '', $index = null )
+	{
+		if ( $init instanceof soo_txp_rowset )
+		{
+			$this->table = $init->table;
+			$this->rows = $init->rows;
+		}
+		else
+			parent::__construct($init, $table);
+	}
+	
+	/** Return all rows as a nested array of row objects.
+	 *  Each array item is either a soo_txp_row object,
+	 *  or an array of such. If an array, it is the children of the
+	 *  immediately preceding item.
+	 *  This is a recursive function.
+	 *  @param rows Internal use only.
+	 *  @param rgt Internal use only.
+	 */
+	public function as_object_array( &$rows = null, $rgt = null )
+	{
+		if ( is_null($rows) )
+		{
+			$rows = $this->rows;
+			$root = current($rows);
+			$rgt = $root->rgt;
+		}
+		while ( $out[] = $node = array_shift($rows) and $node->rgt <= $rgt )
+			if ( $node->rgt > $node->lft + 1 )
+				$out[] = $this->as_object_array($rows, $node->rgt);
+ 		if ( $node and $node->rgt > $rgt )
+ 			array_unshift($rows, array_pop($out));
+ 		if ( is_null($out[count($out) - 1]) )
+ 			array_pop($out);
+		return $out;
+	}
 
+	/** Return all rows as a nested array of values.
+	 *  Each array item is either a node, as $index_column => $value_column,
+	 *  or an array of such. If an array, it is the children of the
+	 *  immediately preceding item, and has the key 'x_c' where 'x' is
+	 *  the parent node's index.
+	 *  This is a recursive function.
+	 *  @param index_column Column for node index value
+	 *  @param index_column Column for node value
+	 *  @param rows Internal use only.
+	 *  @param rgt Internal use only.
+	 */
+	public function as_array( $index_column, $value_column, &$rows = null, $rgt = null )
+	{
+		if ( is_null($rows) )
+		{
+			$rows = $this->rows;
+			$root = current($rows);
+			$rgt = $root->rgt;
+		}
+		while ( $node = array_shift($rows) and $node->rgt <= $rgt )
+		{
+			$out[$node->$index_column] = $node->$value_column;
+			if ( $node->rgt > $node->lft + 1 )
+				$out[$node->$index_column . '_c'] = $this->as_array($index_column, $value_column, $rows, $node->rgt);
+		}
+ 		if ( $node and $node->rgt > $rgt )
+ 			array_unshift($rows, $node);
+		return $out;
+	}
+	
+	/** Split off a subtree of rows as a new soo_nested_set object
+	 *  @param root id of subtree root node
+	 *  @return soo_txp_rowset
+	 */
+	public function subtree( $root, $index = null )
+	{
+		$out = new self;
+		$root = $this->rows[$root];
+		foreach ( $this->rows as $row )
+			if ( $row->lft >= $root->lft and $row->rgt <= $root->rgt )
+				$out->add_row($row, null, is_null($index) ? null : $row->$index);
+		return $out;
+	}
+}
+
+/// Class for single data records.
+class soo_txp_row extends soo_obj
+{
+	/// Database table name.
 	protected $table		= '';
+	/// Database record.
 	protected $data			= array();
 	
-	function __construct( $init = array(), $table = '' ) {
+	/** Constructor.
+	 *  @param init Key value, soo_txp_select object, or data array
+	 *  @param table Txp table name
+	 */
+	public function __construct( $init = array(), $table = '' )
+	{
 		if ( is_scalar($init) and $table )
 			$init = new soo_txp_select($table, $init);
-		if ( $init instanceof soo_txp_select ) {
+		if ( $init instanceof soo_txp_select )
+		{
 			$table = $init->table;
 			$init = $init->row();
 		}
@@ -382,53 +869,76 @@ class soo_txp_row extends soo_obj {
 		$this->table = $table;
 	}
 
-	function __get( $property ) {
+	/** Generic getter, overriding parent method.
+	 *  Look for $property in the $data array first
+	 *  @param property Column or property name
+	 *  @return mixed Data field or object property
+	 */
+	public function __get( $property )
+	{
 		return isset($this->data[$property]) ? $this->data[$property] 
 			: parent::__get($property);
 	}
 	
-	function data( ) {
-		return; // to override parent::__call(), to keep $this->data protected
+	/// Override parent method, to keep $data protected.
+	public function data( )
+	{
+		return;
 	}
 	
-	public function properties( ) {
+	/// @return array Database record (column:value array)
+	public function properties( )
+	{
 		return $this->data;
 	}
 }
-////////////////////// end of class soo_txp_row ////////////////////////////////
 
-
-class soo_txp_img extends soo_txp_row {
-			
+/// Class for Txp image records.
+class soo_txp_img extends soo_txp_row
+{
+	/// URL of full-size image.
 	protected $full_url		= '';
+	/// URL of thumbnail image.
 	protected $thumb_url	= '';
 	
-	function __construct( $init ) {
+	/** Constructor.
+	 *  @param init Txp image id
+	 */
+	public function __construct( $init )
+	{
 		global $img_dir;
 		parent::__construct($init, 'txp_image');
 		$this->full_url = hu . $img_dir . '/' . $this->id . $this->ext;
-		$this->thumb_url = hu . $img_dir . '/' . $this->id . 't' . $this->ext;
+		if ( $this->thumbnail )
+			$this->thumb_url = hu . $img_dir . '/' . $this->id . 't' . $this->ext;
 	}
-		
 }
-/////////////////////// end of class soo_txp_img ///////////////////////////
 
-
-abstract class soo_html extends soo_obj {
+/// Abstact base class for (X)HTML elements.
+abstract class soo_html extends soo_obj
+{
 // HTML element class. Instantiation takes a required 'name' argument and an
 // optional 'atts' array: items with keys matching HTML attributes 
 // will be transferred to the new object.
 // 
 // See the soo_html_img class for an example of how to extend this class.
 	
-	// inherent properties
+	/// @name Inherent properties
+	//@{
+	/// (X)HTML element name
 	protected $element_name	= '';
-	protected $is_empty		= 0;		// 0: container; 1: empty (single-tag)
-	protected $is_block		= 0;		// 0: inline; 1: block	not sure if this is necessary...
+	/// container (false) or empty element (true)
+	protected $is_empty		= 0;
+	/// inline (false) or block (true) element
+	protected $is_block		= 0;
+	/// Allowable content elements
 	protected $can_contain	= array();
-	protected $contents		= array();		// object (another element) or string
+	/// Element content array (strings or soo_html objects)
+	protected $contents		= array();
+	//@}
 	
-	// common HTML attributes
+	/// @name Common (X)HTML attributes
+	//@{
 	protected $class			= '';
 	protected $dir				= '';
 	protected $id				= '';
@@ -445,8 +955,15 @@ abstract class soo_html extends soo_obj {
 	protected $onmouseup		= '';
 	protected $style			= '';
 	protected $title			= '';
+	//@}
 	
-	function __construct($element_name, $atts, $content = '') {
+	/** Constructor.
+	 *  @param element_name (X)HTML element name
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct($element_name, $atts, $content = null)
+	{
 		$this->element_name($element_name);
 		if ( empty($atts) )
 			$atts = array();
@@ -456,11 +973,15 @@ abstract class soo_html extends soo_obj {
 		if ( $content )
 			$this->contents($content);
 	}
-
-	public function id($id) {
-		// Valid HTML IDs must begin with a letter
-		// Do not confuse with database IDs
-		if ( $id and !preg_match('/^[a-z]/', strtolower(trim($id))) ) {
+	
+	/** Validate and set id attribute.
+	 *  Important: (X)HTML attribute, NOT a database ID!
+	 *  @param id (must begin with a letter)
+	 */
+	public function id($id)
+	{
+		if ( $id and !preg_match('/^[a-z]/', strtolower(trim($id))) )
+		{
 			$this->id = 'invalid_HTML_ID_value_from_Soo_Txp_Obj';
 			return false;
 		}
@@ -468,33 +989,49 @@ abstract class soo_html extends soo_obj {
 		return $this;
 	}
 	
-	public function contents($content) {
-		if ( ! $this->is_empty ) {
-			if ( is_array($content) )
-				$this->contents[] = array_merge($this->contents, $content);
-			else
-				$this->contents[] = $content;
+	/** Add string|object|array to $contents array.
+	 *  @param content
+	 */
+	public function contents($content)
+	{
+		if ( ! $this->is_empty )
+		{
+			$content = is_array($content) ? $content : array($content);
+			foreach ( $content as $i => $item )
+				if ( is_null($item) )
+					unset($content[$i]);
+			$this->contents = array_merge($this->contents, $content);
 		}
 		return $this;
 	}
-	
-	// Utilities /////////////////////////////////////
-
-	private function html_attribute_names() {
+	/** Return an array of names of all allowed (X)HTML attributes.
+	 *  @return array
+	 */
+	private function html_attribute_names()
+	{
 		$not = array('element_name', 'is_empty', 'is_block', 'contents', 'can_contain');	// gotta be a better way
 		$all = $this->property_names();
 		return array_diff($all, $not);
 	}
 	
-	private function html_attributes() {
+	/** Return an attribute:value array of all (X)HTML attributes.
+	 *  @return array
+	 */
+	private function html_attributes()
+	{
 		$out = array();
 		foreach ( $this as $property => $value )
 			if ( in_array($property, $this->html_attribute_names()) )
 				$out[$property] = $value;
 		return $out;
 	}
-
-	public function tag() {
+	
+	/** Create (X)HTML tag(s) string for this element.
+	 *  Recursively tags contained elements
+	 *  @return string
+	 */
+	public function tag()
+	{
 	
 		$out = '<' . $this->element_name;
 		
@@ -507,30 +1044,41 @@ abstract class soo_html extends soo_obj {
 		if ( $this->is_empty )
 			return $out . ' />';
 					
-		$out .= '>' . ( $this->is_block ? n : '');
+		$out .= '>' . $this->newline();
 				
 		foreach ( $this->contents as $item )
 			
 			if ( $item instanceof soo_html )
-				$out .= $item->tag() . ( $item->is_block ? n : '');		
+				$out .= $item->tag();		
 					// recursion ...
 				
 			else
 				$out .= $item;
 		
-		return $out . "</$this->element_name>";
+		return $out . $this->newline() . "</$this->element_name>" . $this->newline();
 	}
-
-	protected function html_escape( $property ) {
+	
+	/** Convert $this->$property with htmlspecialchars().
+	 *  @param property Attribute name
+	 *  @return string (X)HTML-escaped attribute value
+	 */
+	protected function html_escape( $property )
+	{
 		$this->$property = htmlspecialchars($this->$property);
 		return $this;
 	}
 	
+	private function newline()
+	{
+		return ( $this->is_block and count($this->contents) > 1 ) ? n : '';
+	}
 }
-/////////////////////// end of class soo_html //////////////////////////////
 
-class soo_html_anchor extends soo_html {
-
+/// Class for (X)HTML anchor elements.
+class soo_html_anchor extends soo_html
+{
+	/// @name (X)HTML attributes
+	//@{
 	protected $href				= '';
 	protected $name				= '';
 	protected $rel				= '';
@@ -544,9 +1092,13 @@ class soo_html_anchor extends soo_html {
 	protected $coords			= '';
 	protected $onfocus			= '';
 	protected $onblur			= '';
-
-	public function __construct ( $atts = array(), $content = '' ) {
-	// $atts can be an array, or just the href value
+	//@}
+	
+	/** @param atts URI string (href value) or attribute array.
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $atts = array(), $content = '' )
+	{
 		if ( ! is_array($atts) )
 			$atts = array('href' => $atts);
 		$this->is_empty(false)->is_block(false);
@@ -555,46 +1107,225 @@ class soo_html_anchor extends soo_html {
 	
 }
 
-class soo_html_br extends soo_html {
-
-	public function __construct ( $atts = array() ) {
+/// Class for (X)HTML br elements.
+class soo_html_br extends soo_html
+{
+	/** Constructor.
+	 *  @param atts Attributes (array of name=>value pairs)
+	 */
+	public function __construct ( $atts = array() )
+	{
 		parent::__construct( 'br', $atts );
 		$this->is_empty(true)->is_block(false);
 	}
 }
 
-class soo_html_form extends soo_html {
-	
+/// Class for (X)HTML form elements
+class soo_html_form extends soo_html
+{
+	/// @name (X)HTML attributes
+	//@{
 	protected $action			= '';
 	protected $method			= '';
 	protected $enctype			= '';
 	protected $accept_charset	= '';
 	protected $onsubmit			= '';
 	protected $onreset			= '';
+	//@}
 
-	public function __construct ( $init = array(), $content = '' ) {
+	/** Constructor.
+	 *  @param init Form action or attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $init = array(), $content = '' )
+	{
+		$this->is_empty(false)->is_block(true);
 		$atts = is_string($init) ? array('action' => $init) : $init;
 		if ( ! isset($atts['method']) )
 			$atts['method'] = 'post';
-		parent::__construct( 'form', $atts, $content );
-		$this->is_empty(false)->is_block(true);
+		if ( is_array($atts['action']) )
+		{
+			foreach ( $atts['action'] as $k => $v )
+				$atts['action'][$k] = "$k=$v";
+			$atts['action'] = '?' . implode(a, $atts['action']);
+		}
+		parent::__construct('form', $atts, $content );
 	}
 }
 
-class soo_html_img extends soo_html {
+/// Class for (X)HTML label elements
+class soo_html_label extends soo_html
+{
+	/// @name (X)HTML attributes
+	//@{
+	protected $for				= '';
+	protected $onfocus			= '';
+	protected $onblur			= '';
+	//@}	
 
+	/** Constructor.
+	 *  @param init 'for' attribute or array of name=>value pairs
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $init = array(), $content = '' )
+	{
+		$this->is_empty(false)
+			->is_block(false);
+		if ( is_string($init) )
+			$init = array('for' => $init);
+		parent::__construct('label', $init, $content);
+	}
+}
+
+abstract class soo_html_form_control extends soo_html
+{
+	/// @name (X)HTML attributes
+	//@{
+	protected $name				= '';
+	protected $disabled			= '';
+	protected $tabindex			= '';
+	protected $onfocus			= '';
+	protected $onblur			= '';
+	//@}	
+}
+
+/// Class for (X)HTML input elements
+class soo_html_input extends soo_html_form_control
+{
+	
+	/// @name (X)HTML attributes
+	//@{
+	protected $type				= '';
+	protected $value			= '';
+	protected $checked			= '';
+	protected $size				= '';
+	protected $maxlength		= '';
+	protected $src				= '';
+	protected $alt				= '';
+	protected $usemap			= '';
+	protected $readonly			= '';
+	protected $accept			= '';
+	protected $onselect			= '';
+	protected $onchange			= '';
+	//@}	
+
+	/** Constructor.
+	 *  @param type Input type (text|checkbox|radio etc.)
+	 *  @param atts Attributes (array of name=>value pairs)
+	 */
+	public function __construct ( $type = 'text', $atts = array() )
+	{
+		$this->is_empty(true)
+			->is_block(false)
+			->type($type);
+		parent::__construct('input', $atts);
+	}
+}
+
+/// Class for (X)HTML select elements
+class soo_html_select extends soo_html_form_control
+{
+	/// @name (X)HTML attributes
+	//@{
+	protected $multiple			= '';
+	protected $size				= '';
+	protected $onchange			= '';
+	//@}	
+
+	/** Constructor.
+	 *  If $content is an array, each item will be added as
+	 *  a soo_html_option element (assumes value=>text array)
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (soo_html_option objects)
+	 */
+	public function __construct ( $atts = array(), $content = array() )
+	{
+		$this->is_empty(false)
+			->is_block(true);
+		parent::__construct('select', $atts);
+		if ( ! is_array($content) ) $content = array($content);
+		foreach ( $content as $i => $item )
+		{
+			if ( $item instanceof soo_html_option )
+				$this->contents($item);
+			else
+				$this->contents(new soo_html_option(array('value' => $i), $item));
+		}
+	}
+}
+
+/// Class for (X)HTML option elements
+class soo_html_option extends soo_html_form_control
+{
+	/// @name (X)HTML attributes
+	//@{
+	protected $value			= '';
+	protected $selected			= '';
+	protected $label			= '';
+	//@}	
+
+	/** Constructor.
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (displayed option text)
+	 */
+	public function __construct ( $atts = array(), $content = array() )
+	{
+		$this->is_empty(false)
+			->is_block(false);
+		parent::__construct('option', $atts, $content);
+	}
+}
+
+/// Class for (X)HTML textarea elements
+class soo_html_textarea extends soo_html_form_control
+{
+	/// @name (X)HTML attributes
+	//@{
+	protected $rows				= '';
+	protected $cols				= '';
+	protected $readonly			= '';
+	protected $onselect			= '';
+	protected $onchange			= '';
+	//@}	
+
+	/** Constructor.
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string)
+	 */
+	public function __construct ( $atts = array(), $content = '' )
+	{
+		$this->is_empty(false)
+			->is_block(false);
+		parent::__construct('textarea', $atts, $content);
+	}
+}
+
+/// Class for (X)HTML img elements
+class soo_html_img extends soo_html
+{
+	/// @name (X)HTML attributes
+	//@{
 	protected $alt				= '';
 	protected $src				= '';
 	protected $width			= '';
 	protected $height			= '';
+	//@}
 			
-	public function __construct ( $init = array(), $thumbnail = false, $escape = true ) {
-	
-		if ( $init instanceof soo_txp_img ) {
+	/** Constructor.
+	 *  @param init soo_txp_img object,  attribute array, or src value
+	 *  @param thumbnail Thumbnail or full image?
+	 *  @param escape HTML-escape title and alt attributes?
+	 */
+	public function __construct ( $init = array(), $thumbnail = false, $escape = true )
+	{
+		if ( $init instanceof soo_txp_img )
+		{
 			$src = $thumbnail ? $init->thumb_url : $init->full_url;
 			$init = $init->properties();
-			if ( $thumbnail ) {
-				if ( ! empty($init['thumb_h']) ) { // pre Txp 4.2 compatibility
+			if ( $thumbnail )
+			{
+				if ( ! empty($init['thumb_h']) )
+				{ // pre Txp 4.2 compatibility
 					$init['h'] = $init['thumb_h'];
 					$init['w'] = $init['thumb_w'];
 				}
@@ -618,12 +1349,16 @@ class soo_html_img extends soo_html {
 	}
 	
 }
-/////////////////////// end of class soo_html_img //////////////////////////
 
-
-class soo_html_p extends soo_html {
-	
-	public function __construct ( $atts = array(), $content = '' ) {
+/// Class for (X)HTML p elements
+class soo_html_p extends soo_html
+{
+	/** Constructor.
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $atts = array(), $content = '' )
+	{
 		$this->is_empty(false)
 			->is_block(true)
 			->can_contain(array('inline'));
@@ -631,8 +1366,11 @@ class soo_html_p extends soo_html {
 	}
 }
 
-class soo_html_table extends soo_html {
-
+/// Class for (X)HTML table elements
+class soo_html_table extends soo_html
+{
+	/// @name (X)HTML attributes
+	//@{
 	protected $summary				= '';
 	protected $width				= '';
 	protected $border				= '';
@@ -640,125 +1378,285 @@ class soo_html_table extends soo_html {
 	protected $rules				= '';
 	protected $cellspacing			= '';
 	protected $cellpadding			= '';
+	//@}
 
-	public function __construct ( $atts = array(), $content = '' ) {
+	/** Constructor.
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 *  @see contents() for $content options
+	 */
+	public function __construct ( $atts = array(), $content = null )
+	{
 		$this->is_empty(false)
 			->is_block(true)
 			->can_contain(array('caption', 'col', 'colgroup', 
-				'thead', 'tfoot', 'tbody'));
-			// can also contain tr if only one tbody and no tfoot or thead;
-		parent::__construct( 'table', $atts, $content );
+				'thead', 'tfoot', 'tbody', 'tr'));
+			// can contain tr if only one tbody (implied) and no tfoot or thead;
+		$this->contents($content);
+		parent::__construct( 'table', $atts );
+	}
+	
+	/** Add string|object|array to $contents array.
+	 *  If this is a soo_html_table_component object, or an array of such,
+	 *  it will be added directly. Otherwise it is assumed to be a single
+	 *  item or 2-dimensional array of such, and will be formed into a grid
+	 *  of table cells/rows.
+	 *  @param content
+	 */
+	public function contents($content)
+	{
+		if ( is_null($content) ) return $this;
+		
+		$content = is_array($content) ? $content : array($content);
+		foreach ( $content as $item )
+		{
+			if ( is_object($item) and ( $item instanceof soo_html_table_component or $item instanceof soo_html_caption) )
+				$this->contents[] = $item;
+			else
+			{
+				$item = is_array($item) ? $item : array($item);
+				foreach ( $item as $i => $cell )
+					if ( ! $cell instanceof soo_html_table_component )
+						$item[$i] = new soo_html_td(array(), $cell);
+				$this->contents[] = new soo_html_tr(array(), $item);
+			}
+		}
+		return $this;
 	}
 }
 
-abstract class soo_html_table_component extends soo_html {
+/// Class for (X)HTML caption elements
+class soo_html_caption extends soo_html_table_component
+{
+	public function __construct ( $atts = array(), $content )
+	{
+		parent::__construct( 'caption', $atts, $content );
+	}
+}
 
+/// Abstract base class for (X)HTML table components
+abstract class soo_html_table_component extends soo_html
+{
+	/// @name (X)HTML attributes
+	//@{
 	protected $align				= '';
 	protected $char					= '';
 	protected $charoff				= '';
 	protected $valign				= '';
+	//@}
 
-	public function __construct ( $component, $atts = array(), $content = '' ) {
-		$this->is_empty(false)->is_block(true);
+	/** Constructor.
+	 *  @param component (X)HTML element name
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $component, $atts = array(), $content = '', $is_empty = false, $is_block = true )
+	{
+		$this->is_empty($is_empty)->is_block($is_block);
 		parent::__construct( $component, $atts, $content );
 	}
 }
 
-class soo_html_thead extends soo_html_table_component {
-
-	public function __construct ( $atts = array(), $content = '' ) {
+/// Class for (X)HTML thead elements
+class soo_html_thead extends soo_html_table_component
+{
+	/** Constructor.
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $atts = array(), $content = '' )
+	{
 		$this->can_contain(array('tr'));
 		parent::__construct( 'thead', $atts, $content );
 	}
 }
 
-class soo_html_tbody extends soo_html_table_component {
-
-	public function __construct ( $atts = array(), $content = '' ) {
+/// Class for (X)HTML tbody elements
+class soo_html_tbody extends soo_html_table_component
+{
+	/** Constructor.
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $atts = array(), $content = '' )
+	{
 		$this->can_contain(array('tr'));
 		parent::__construct( 'tbody', $atts, $content );
 	}
 }
 
-class soo_html_tfoot extends soo_html_table_component {
-
-	public function __construct ( $atts = array(), $content = '' ) {
+/// Class for (X)HTML tfoot elements
+class soo_html_tfoot extends soo_html_table_component
+{
+	/** Constructor.
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $atts = array(), $content = '' )
+	{
 		$this->can_contain(array('tr'));
 		parent::__construct( 'tfoot', $atts, $content );
 	}
 }
 
-class soo_html_tr extends soo_html_table_component {
+/// Class for (X)HTML tr elements
+class soo_html_tr extends soo_html_table_component
+{
 			
-	public function __construct ( $atts = array(), $content = '' ) {
+	/** Constructor.
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $atts = array(), $content = '' )
+	{
 		$this->can_contain(array('th', 'td'));
 		parent::__construct( 'tr', $atts, $content );
 	}	
 }
 
-abstract class soo_html_table_cell extends soo_html_table_component {
-
+/// Abstract base class for (X)HTML table cells
+abstract class soo_html_table_cell extends soo_html_table_component
+{
+	/// @name (X)HTML attributes
+	//@{
 	protected $rowspan			= '';
 	protected $colspan			= '';
 	protected $headers			= '';
 	protected $abbr				= '';
 	protected $scope			= '';
 	protected $axis				= '';
+	//@}
 
-	public function __construct ( $cell_type, $atts = array(), $content = '' ) {
-			
+	/** Constructor.
+	 *  @param cell_type Element name (td, th)
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $cell_type, $atts = array(), $content = '' )
+	{
 		parent::__construct( $cell_type, $atts, $content );		
 // 		$this->can_contain(array('caption', 'col', 'colgroup', 
 // 				'thead', 'tfoot', 'tbody'));
 	}
 }
 
-class soo_html_th extends soo_html_table_cell {
-
-	public function __construct ( $atts = array(), $content = '' ) {
+/// Class for (X)HTML th elements
+class soo_html_th extends soo_html_table_cell
+{
+	/** Constructor.
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $atts = array(), $content = '' )
+	{
 		parent::__construct( 'th', $atts, $content );
 	}
 }
 
-class soo_html_td extends soo_html_table_cell {
-
-	public function __construct ( $atts = array(), $content = '' ) {
+/// Class for (X)HTML td elements
+class soo_html_td extends soo_html_table_cell
+{
+	/** Constructor.
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $atts = array(), $content = '' )
+	{
 		parent::__construct( 'td', $atts, $content );
 	}
 		
 }
 
-class soo_html_ol extends soo_html {
-
-	public function __construct ( $atts = array(), $content = '' ) {
+/// Base class for (X)HTML ol and ul elements
+abstract class soo_html_list extends soo_html
+{
+	/** Constructor.
+	 *  If $content is an array, each item that is not an array will be added
+	 *  as a soo_html_li object; each item that is an array will be added
+	 *  to the previous soo_html_li object as a new list of the same class
+	 *  (hence this is a recursive function).
+	 *  Any other content will be added as a soo_html_li object.
+	 *  @param element_name Element namd (ol or ul)
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $element_name, $atts, $content, $class )
+	{
 		$this->is_empty(false)
 			->is_block(true);
 			//->can_contain(array('li'));
-		parent::__construct( 'ol', $atts, $content );
+		if ( ! is_array($content) )
+			$content = array($content);
+		$prev = null;
+		foreach ( $content as $i => &$item )
+		{
+			if ( is_array($item) )
+			{
+				if ( ! is_null($prev) and $content[$prev] instanceof soo_html_li )
+				{
+					$content[$prev]->contents(new $class($atts, $item));
+					unset($content[$i]);
+				}
+				else foreach ( $item as &$li )
+					$li = new soo_html_li(array(), $li);
+			}
+			elseif ( ! $item instanceof soo_html_li )
+				$item = new soo_html_li(array(), $item);
+			$prev = $i;
+		}
+		parent::__construct($element_name, $atts, $content);
 	}
 }
 
-class soo_html_ul extends soo_html {
-
-	public function __construct ( $atts = array(), $content = '' ) {
-		$this->is_empty(false)
-			->is_block(true);
-			//->can_contain(array('li'));
-		parent::__construct( 'ul', $atts, $content );
+/// Class for (X)HTML ol elements
+class soo_html_ol extends soo_html_list
+{
+	/** Constructor.
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $atts = array(), $content = '' )
+	{
+		parent::__construct('ol', $atts, $content, __CLASS__);
 	}
 }
 
-class soo_html_li extends soo_html {
+/// Class for (X)HTML ul elements
+class soo_html_ul extends soo_html_list
+{
+	/** Constructor.
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $atts = array(), $content = '' )
+	{
+		parent::__construct('ul', $atts, $content, __CLASS__);
+	}
+}
 
-	public function __construct ( $atts = array(), $content = '' ) {
+/// Class for (X)HTML li elements
+class soo_html_li extends soo_html
+{
+	/** Constructor.
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $atts = array(), $content = '' )
+	{
 		$this->is_empty(false)->is_block(true);
 		parent::__construct('li', $atts, $content);
 	}
 }
 
-class soo_html_span extends soo_html {
-
-	public function __construct ( $atts = array(), $content = '' ) {
+/// Class for (X)HTML span elements
+class soo_html_span extends soo_html
+{
+	/** Constructor.
+	 *  @param atts Attributes (array of name=>value pairs)
+	 *  @param content Element content (string, soo_html object, or array thereof)
+	 */
+	public function __construct ( $atts = array(), $content = '' )
+	{
 		$this->is_empty(false)->is_block(false);
 		parent::__construct('span', $atts, $content);
 	}
@@ -777,23 +1675,36 @@ if( is_array($plugin_callback)
 			'pre'		=>	0 )
 		);
 
-function soo_uri_mlp() {
+function soo_uri_mlp()
+{
 	global $soo_request_uri;
 	$soo_request_uri =  $_SERVER['REQUEST_URI'];
 }
 /////////////////////// end MLP Pack compatibility //////////////////////
 
 
-class soo_uri extends soo_obj {
-	
+/// Class for URI query string manipulation
+class soo_uri extends soo_obj
+{
+	/// Full URI
 	protected $full;
+	
+	/// $_SERVER['REQUEST_URI'] value
 	protected $request_uri;
+	
+	/// $_SERVER['QUERY_STRING'] value
 	protected $query_string;
+	
+	/// URI query parameters
 	protected $query_params;
-
-	public function __construct ( ) {
-		
-		global $soo_request_uri;		
+	
+	/** Constructor.
+	 *  Extract REQUEST_URI and QUERY_STRING from $_SERVER,
+	 *  and parse into query params and full URI.
+	 */
+	public function __construct ( )
+	{	
+		global $soo_request_uri;	// MLP Pack compatibility
 		$this->request_uri = $soo_request_uri ? $soo_request_uri :
 			$_SERVER['REQUEST_URI'];
 		$this->query_string = $_SERVER['QUERY_STRING'];
@@ -801,11 +1712,20 @@ class soo_uri extends soo_obj {
 		parse_str($this->query_string, $this->query_params);
 	}
 	
-	public function __call( $request, $args ) {
+	/// Override parent method to prevent direct property manipulation
+	public function __call( $request, $args )
+	{
 		return false;
 	}
-		
-	public function set_query_param ( $name, $value = null ) {
+	
+	/** Add, remove, or update a query parameter
+	 *  Then run update_from_params() to update $query_string and 
+	 *  $request_uri (and the corresponding $_SERVER values) accordingly
+	 *  @param name Parameter name
+	 *  @param value Parameter value
+	 */
+	public function set_query_param ( $name, $value = null )
+	{
 		if ( is_null($value) )
 			unset($this->query_params[$name]);
 		else
@@ -814,7 +1734,11 @@ class soo_uri extends soo_obj {
 		return $this;
 	}
 	
-	private function update_from_params ( ) {
+	/** Rebuild $query_string and $request_uri (and the corresponding
+	 *  $_SERVER values) based on the current $params array
+	 */
+	private function update_from_params ( )
+	{
 		$this->query_string = http_build_query($this->query_params);
 		$this->request_uri = self::strip_query($this->request_uri) . 
 			( $this->query_string ? '?' . $this->query_string : '' );
@@ -823,13 +1747,22 @@ class soo_uri extends soo_obj {
 		$_SERVER['REQUEST_URI'] = $this->request_uri;
 	}
 	
-	public function strip_query ( $uri ) {
+	/** Remove the query string from a URI
+	 *  @return string
+	 */
+	public function strip_query ( $uri )
+	{
 		return preg_replace ('/(.+)\?.+/', '$1', $uri);
 	}
 	
-		// for sub-dir installations, strip the sub-dir
-	private function request_uri ( ) {
-		if ( preg_match('&://[^/]+(/.+)/$&', hu, $match) ) {
+	/** Return the $request_uri after stripping any subdir
+	 *  (for Txp subdir installations)
+	 *  @return string
+	 */
+	private function request_uri ( )
+	{
+		if ( preg_match('&://[^/]+(/.+)/$&', hu, $match) )
+		{
 			$sub_dir = $match[1];
 			return substr($this->request_uri, strlen($sub_dir));
 		}
@@ -837,18 +1770,35 @@ class soo_uri extends soo_obj {
 	}
 
 }
-/////////////////////// end of class soo_uri ////////////////////////////
 
-class soo_util {	// miscellaneous static utilty methods
-	
-	public static function txp_tag ( $func, $atts = array(), $thing = null ) {
+/// Class for static utility methods
+class soo_util
+{
+	/** Build a Txp tag string.
+	 *  @param func Txp tag name (e.g. 'article_custom')
+	 *  @param atts Tag attributes
+	 *  @param thing Tag contents
+	 *  @return string Txp tag
+	 */
+	public static function txp_tag ( $func, $atts = array(), $thing = null )
+	{
 		$a = '';
 		foreach ( $atts as $k => $v )
 			$a .= " $k=\"$v\"";
 		return "<txp:$func$a" . ( is_null($thing) ? ' />' : ">$thing</txp:$func>" );		
 	}
 	
-	public static function secondpass ( $func, $atts = array(), $thing = null ) {
+	/** Return a Txp tag string, if it's still the first parse() pass.
+	 *  Allows placing a tag with dependencies before its associated controller,
+	 *  deferring parsing to the second parse() pass.
+	 *  E.g. placing a pagination tag before its associated article tag.
+	 *  @param func Txp tag name (e.g. 'article_custom')
+	 *  @param atts Tag attributes
+	 *  @param thing Tag contents
+	 *  @return string Txp tag
+	 */
+	public static function secondpass ( $func, $atts = array(), $thing = null )
+	{
 		global $pretext;
 		if ( $pretext['secondpass'] ) return; // you only live twice
 		return self::txp_tag($func, $atts, $thing);
@@ -885,59 +1835,49 @@ div#sed_help sup {line-height:0;}
 </style>
 # --- END PLUGIN CSS ---
 # --- BEGIN PLUGIN HELP ---
- <div id="sed_help">
+<div id="sed_help">
 
 h1. soo_txp_obj
 
-h2(#overview). Overview
-
-*soo_txp_obj* is a library for creating Textpattern plugins. It has classes for query objects (SQL queries), data objects (Txp database records), and HTML objects (HTML elements).
-
-The design of the library aims for strict separation of data retrieval and HTML output. Of course boundaries do blur and you have to do what works, but a little extra time figuring out how to work with the model rather than around it can pay dividends.
-
-*soo_txp_obj* is currently a beta release. Future releases are not expected to (significantly) break backwards-compatibility.
-
-Suggestions and corrections gladly accepted. "Email the author &rarr;":http://ipsedixit.net/info/2/contact
-
-This is a very minimal guide. More information and examples are available "here":http://ipsedixit.net/txp/21/soo-txp-obj.
-
-h3(#classes). Classes
-
-All the classes (except "soo_util":#soo_util) extend the "soo_obj":#soo_obj base class. Most of the classes fall into three families: queries, data records, and HTML element classes. Another class, soo_uri, is for handling URI query strings.
-
-h4(#soo_obj). soo_obj
-
-Abstract base class, with no properties and just a few low-level methods. Has @__get()@ as a generic getter, and a @__call()@ which will work as a generic setter for calls in the form @property($value)@.
-
-h4(#soo_txp_query). soo_txp_query
-
-Abstract base class for building queries. Currently extended to soo_txp_select for making @SELECT@ calls; would be easy to extend to additional child classes for @INSERT@, @UPDATE@, and @DELETE@ calls.
-
-h4(#soo_txp_row). soo_txp_row
-
-Basic class for Txp database records (rows). If you give it an identifier (e.g., article ID) or *soo_txp_query* object on instantiation it will automatically populate the @data@ array. Has been extended to *soo_txp_img* which adds properties for full and thumbnail URL.
-
-h4(#soo_txp_rowset). soo_txp_rowset
-
-For creating and dealing with groups of *soo_txp_row* objects. Given a *soo_txp_query* object or array of data records it will automatically populate the @rows@ array with *soo_txp_row* objects.
-
-h4(#soo_html). soo_html
-
-Abstract base class for building HTML tags. Currently extended to cover many, but by no means all, HTML elements.
-
-h4(#soo_uri). soo_uri
-
-Intended for dealing with query string parameters, allowing you to set, add, or delete specific parameters while preserving the rest. Note that using this class to set parameters will also reset @$_SERVER['REQUEST_URI']@ and @$_SERVER['QUERY_STRING']@, while leaving the @$_GET@ and @$_POST@ arrays untouched.
-
-h4(#soo_util). soo_util
-
-Miscellaneous class for static utility methods.
+A support library for Textpattern plugins. 
+ 
+* "Information and examples":http://ipsedixit.net/txp/21/soo-txp-obj
+* "API Documentation":http://ipsedixit.net/api/soo_txp_obj/
 
 h2(#history). Version history
 
+h3(#b9). 1.1.b.1
+
+* New class, *soo_txp_left_join* for @SELECT ... LEFT JOIN@ queries
+* *soo_txp_upsert* new features:
+** properties and methods for @VALUES()@ syntax
+** can be initialized with a *soo_txp_rowset* or *soo_txp_row* object
+* *soo_txp_rowset* new features:
+** can be initialized with a query result resource
+** new function @subset()@ to create a new rowset object from an existing one
+* New class, *soo_nested_set* for Celko nested sets (modified preorder tree)
+* *soo_html_form*, new features and related classes:
+** Constructor's @atts@ argument can include an @action@ array for adding query parameters to the form's @action@ attribute
+** New classes:
+*** *soo_html_label* for labeling form controls
+*** *soo_html_input* for input elements
+*** *soo_html_select* for select elements (can be initialized with an array which will auto-create appropriate @option@ elements)
+*** *soo_html_option* (see above)
+*** *soo_html_textarea* for textarea elements
+* *soo_html_img* bugfix for pre Txp 4.2 compatibility
+* *soo_html_table* can now be initialized with an array of values or table cells; these will automatically be formatted into rows and cells appropriately
+* *New class, *soo_html_caption* for table captions
+* *soo_html_ol* and *soo_html_ul* can be initialized with nested arrays, automatically generating nested lists (see *soo_nested_set* for a possible source of the nested array)
+
+h3(#b8). 1.0.b.8
+
+7/9/2010
+
+* Documentation updates (DoxyGen compatibility)
+
 h3(#b7). 1.0.b.7
 
-7/4/2010 (USA Independence Day)
+7/4/2010
 
 * *soo_html_img* now adds thumbnail @height@ and @width@ attributes (Txp 4.2.0 or later)
 
@@ -1026,7 +1966,7 @@ h3(#a1). 1.0.a1
 2/4/2009
 
 
- </div>
+</div>
 # --- END PLUGIN HELP ---
 -->
 <?php
