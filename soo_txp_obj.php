@@ -13,7 +13,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program. If not, see <a href="http://www.opensource.org/licenses/lgpl-2.1.php">http://www.opensource.org/licenses/lgpl-2.1.php</a>.</small>
  *  @author Copyright 2009&ndash;2011 <a href="http://ipsedixit.net/info/2/contact">Jeff Soo</a>
- *  @version 1.1.0
+ *  @version 1.1.0 
+ *  @date Released 2011-01-07
  *  @sa <a href="http://ipsedixit.net/txp/21/soo-txp-obj">soo_txp_obj Developer Guide</a>
  */
 $plugin['name'] = 			'soo_txp_obj';
@@ -442,8 +443,7 @@ class soo_txp_left_join extends soo_txp_select
 		$this->join_on = self::t1 . '.' . self::quote($col1) . ' = ' . self::t2 . '.' . self::quote($col2);
 	}
 	
-	/** Like parent function, optionally prepending table name/alias.
-	 *  @example self::quote('col', self::t1) returns t1.`col`
+	/** Like parent::quote, optionally prepending table name/alias.
 	 *  @param identifier Column name or alias
 	 *  @param prefix Table name or alias
 	 */
@@ -1188,6 +1188,7 @@ class soo_html_label extends soo_html
 	}
 }
 
+/// Abstract base class for (X)HTML form controls
 abstract class soo_html_form_control extends soo_html
 {
 	/// @name (X)HTML attributes
@@ -1828,24 +1829,25 @@ h2(#history). Version history
 
 h3(#1_1_0). 1.1.0
 
+2011/01/07
+
 * soo_txp_select::distinct() for @SELECT DISTINCT@ queries
-
-h3(#1_1_b_2). 1.1.b.2
-
-* Bugfix: soo_txp_left_join was incompatible with database table prefixes
+* Bugfix: soo_txp_left_join now works with database table prefixes
 
 h3(#b9). 1.1.b.1
 
 9/12/2010
 
-* New class, *soo_txp_left_join* for @SELECT ... LEFT JOIN@ queries
+_Note: this changelist includes items from the 1.0.b.9 and 1.0.b.10 releases_
+
+* New class, *soo_txp_left_join*, for @SELECT ... LEFT JOIN@ queries
 * *soo_txp_upsert* new features:
 ** properties and methods for @VALUES()@ syntax
 ** can be initialized with a *soo_txp_rowset* or *soo_txp_row* object
 * *soo_txp_rowset* new features:
 ** can be initialized with a query result resource
 ** new function @subset()@ to create a new rowset object from an existing one
-* New class, *soo_nested_set* for Celko nested sets (modified preorder tree)
+* New class, *soo_nested_set*, for Celko nested sets (modified preorder tree)
 * *soo_html_form*, new features and related classes:
 ** Constructor's @atts@ argument can include an @action@ array for adding query parameters to the form's @action@ attribute
 ** New classes:
@@ -1856,7 +1858,7 @@ h3(#b9). 1.1.b.1
 *** *soo_html_textarea* for textarea elements
 * *soo_html_img* bugfix for pre Txp 4.2 compatibility
 * *soo_html_table* can now be initialized with an array of values or table cells; these will automatically be formatted into rows and cells appropriately
-* *New class, *soo_html_caption* for table captions
+* New class, *soo_html_caption*, for table captions
 * *soo_html_ol* and *soo_html_ul* can be initialized with nested arrays, automatically generating nested lists (see *soo_nested_set* for a possible source of the nested array)
 
 h3(#b8). 1.0.b.8
