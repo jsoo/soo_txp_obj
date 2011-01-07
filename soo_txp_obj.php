@@ -12,7 +12,7 @@
  *  GNU General Public License for more details.
  *  You should have received a copy of the GNU General Public License
  *  along with this program. If not, see <a href="http://www.opensource.org/licenses/lgpl-2.1.php">http://www.opensource.org/licenses/lgpl-2.1.php</a>.</small>
- *  @author Copyright 2009&ndash;2010 <a href="http://ipsedixit.net/info/2/contact">Jeff Soo</a>
+ *  @author Copyright 2009&ndash;2011 <a href="http://ipsedixit.net/info/2/contact">Jeff Soo</a>
  *  @version 1.1.0
  *  @sa <a href="http://ipsedixit.net/txp/21/soo-txp-obj">soo_txp_obj Developer Guide</a>
  */
