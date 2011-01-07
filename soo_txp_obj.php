@@ -18,7 +18,7 @@
  */
 $plugin['name'] = 			'soo_txp_obj';
 $plugin['description'] = 	'Support library for Txp plugins';
-$plugin['version'] = 		'1.0.b.9';
+$plugin['version'] = 		'1.1.b.3';
 $plugin['author'] = 		'Jeff Soo';
 $plugin['author_uri'] = 	'http://ipsedixit.net/txp/';
 $plugin['type'] = 2; 
@@ -58,13 +58,13 @@ abstract class soo_obj
 	}
 	
 	/** Return an object's properties as an associative array.
+	 *  Note: includes protected and private properties. 
+	 *  For public properties only, use get_object_vars($obj) directly.
 	 *  @return array
 	 */
 	public function properties()
 	{
-		foreach ( $this as $property => $value )
-			$out[$property] = $value;
-		return $out;
+		return get_object_vars($this);
 	}
 	
 	/** Return an object's properties as an indexed array.
@@ -90,59 +90,42 @@ abstract class soo_txp_query extends soo_obj
 	protected $limit		= 0;
 	/// SQL OFFSET.
 	protected $offset		= 0;
-	
-	private $numeric_index	= array(
-		'textpattern'		=> 'ID',
-		'txp_category'		=> 'id',
-		'txp_discuss'		=> 'discussid',
-		'txp_file'			=> 'id',
-		'txp_image'			=> 'id',
-		'txp_lang'			=> 'id',
-		'txp_link'			=> 'id',
-		'txp_log'			=> 'id',
-		'txp_users'			=> 'user_id',
-	);
-	private $string_index		= array(
-		'textpattern'		=> 'Title',
-		'txp_category'		=> 'name',
-		'txp_css'			=> 'name',
-		'txp_discuss_ipban'	=> 'ip',
-		'txp_discuss_nonce'	=> 'nonce',
-		'txp_file'			=> 'filename',
-		'txp_form'			=> 'name',
-		'txp_image'			=> 'name',
-		'txp_lang'			=> 'lang',
-		'txp_page'			=> 'name',
-		'txp_plugin'		=> 'name',
-		'txp_prefs'			=> 'name',
-		'txp_section'		=> 'name',
-		'txp_users'			=> 'name',
-	);
-	
+		
 	/** Constructor.
 	 *  Use $key to match a single row matching on appropriate key column
-	 *  (usually `name` or `id`)
+	 *  If $key is an array, current key is the column and current value
+	 *  is the value. Otherwise column will be taken from self::key_column().
 	 *  @param table Table name
-	 *  @param key Key column value for WHERE expression
+	 *  @param key Key column value (or array) for WHERE expression
 	 */
 	public function __construct( $table, $key = null )
 	{
 		$this->table = trim($table);
-		if ( $key )
+		if ( is_array($key) )
+			$this->where(key($key), current($key));
+		elseif ( $key )
 			$this->where($this->key_column($key), $key);
 	}
 	
 	/** Add expression to WHERE clause.
 	 *  @param column Column name
-	 *  @param value Column value
+	 *  @param value Column value(s) (string, array, or soo_txp_select)
 	 *  @param operator Comparison operator
 	 *  @param join AND or OR
 	 */
 	public function where( $column, $value, $operator = '=', $join = '' )
 	{
 		$join = $this->andor($join);
-		$this->where[] = ( $join ? $join . ' ' : '' ) . 
-			self::quote($column) . ' ' . $operator . " '" . $value . "'";
+		
+		if ( is_array($value) )
+			$value = '(' . implode(',', quote_list(doSlash($value))) . ')';
+		elseif ( $value instanceof soo_txp_select )
+			$value = '(' . $value->sql() . ')';
+		else
+			$value = "'$value'";
+		
+		$this->where[] = ( $join ? "$join " : '' ) . 
+			self::quote($column) . " $operator $value";
 		return $this;
 	}
 	
@@ -154,7 +137,7 @@ abstract class soo_txp_query extends soo_obj
 	public function where_clause( $clause, $join = '' )
 	{
 		$join = $this->andor($join);
-		$this->where[] = ( $join ? $join . ' ' : '' ) . $clause;
+		$this->where[] = ( $join ? "$join " : '' ) . $clause;
 		return $this;
 	}
 	
@@ -166,12 +149,10 @@ abstract class soo_txp_query extends soo_obj
 	 */
 	public function in( $column, $list, $join = '', $in = true )
 	{
-		$in = ( $in ? '' : ' not' ) . ' in (';
-		if ( is_string($list) ) $list = do_list($list);
-		$join = $this->andor($join);
-		$this->where[] = ( $join ? $join . ' ' : '' ) . self::quote($column) . 
-			$in . implode(',', quote_list(doSlash($list))) . ')';
-		return $this;
+		$in = ( $in ? '' : ' not' ) . ' in';
+		if ( is_string($list) ) 
+			$list = do_list($list);
+		return $this->where($column, $list, $in, $join);
 	}
 	
 	/** Alias of in() with $in = false (add a NOT IN expression).
@@ -191,10 +172,7 @@ abstract class soo_txp_query extends soo_obj
 	 */
 	public function regexp( $pattern, $subject, $join = '' )
 	{
-		$join = $this->andor($join);
-		$this->where[] = ( $join ? $join . ' ' : '' ) . 
-			self::quote($subject) . " regexp '" . $pattern . "'";
-		return $this;
+		return $this->where($subject, $pattern, 'regexp', $join);
 	}
 	
 	protected function andor( $join = 'and' )
@@ -320,10 +298,37 @@ abstract class soo_txp_query extends soo_obj
 	 */
 	public function key_column( $key_value = null )
 	{
-		if ( isset($this->numeric_index[$this->table]) )
-			$nx = $this->numeric_index[$this->table];
-		if ( isset($this->string_index[$this->table]) )
-			$sx = $this->string_index[$this->table];
+		$numeric_index	= array(
+			'textpattern'		=> 'ID',
+			'txp_category'		=> 'id',
+			'txp_discuss'		=> 'discussid',
+			'txp_file'			=> 'id',
+			'txp_image'			=> 'id',
+			'txp_lang'			=> 'id',
+			'txp_link'			=> 'id',
+			'txp_log'			=> 'id',
+			'txp_users'			=> 'user_id',
+		);
+		$string_index		= array(
+			'textpattern'		=> 'Title',
+			'txp_category'		=> 'name',
+			'txp_css'			=> 'name',
+			'txp_discuss_ipban'	=> 'ip',
+			'txp_discuss_nonce'	=> 'nonce',
+			'txp_file'			=> 'filename',
+			'txp_form'			=> 'name',
+			'txp_image'			=> 'name',
+			'txp_lang'			=> 'lang',
+			'txp_page'			=> 'name',
+			'txp_plugin'		=> 'name',
+			'txp_prefs'			=> 'name',
+			'txp_section'		=> 'name',
+			'txp_users'			=> 'name',
+		);
+		if ( isset($numeric_index[$this->table]) )
+			$nx = $numeric_index[$this->table];
+		if ( isset($string_index[$this->table]) )
+			$sx = $string_index[$this->table];
 			
  		if ( is_numeric($key_value) )
 			return isset($nx) ? $nx : null;
@@ -340,6 +345,19 @@ class soo_txp_select extends soo_txp_query
 	
 	/// SQL SELECT expressions.
 	protected $select		= array();
+	/// Whether to add DISTINCT
+	protected $distinct		= false;
+	
+	/** Constructor.
+	 *  @param table Table name
+	 *  @param select item(s) to select
+	 *  @param key Optional key for selecting a single record
+	 */
+	public function __construct( $table, $key = null, $select = null )
+	{
+		parent::__construct($table, $key);
+		if ( $select ) $this->select($select);
+	}
 	
 	/** Add items to the SELECT array.
 	 *  @param list	comma-separated list, or array, of items to select
@@ -347,7 +365,16 @@ class soo_txp_select extends soo_txp_query
 	public function select( $list = '*' )
 	{
 		if ( is_string($list) ) $list = do_list($list);
-		foreach ( $list as $col ) $this->select[] = $this->quote($col);
+		foreach ( $list as $col ) $this->select[] = parent::quote($col);
+		return $this;
+	}
+	
+	/** Add the DISTINCT keyword to the query
+	 *  @return $this to allow method chaining
+	 */
+	public function distinct( )
+	{
+		$this->distinct = true;
 		return $this;
 	}
 	
@@ -373,8 +400,17 @@ class soo_txp_select extends soo_txp_query
 	public function rows()
 	{
 		$this->init_query();
-		return safe_rows(implode(',', $this->select), $this->table, 
-			$this->clause_string());
+		return safe_rows( ( $this->distinct ? 'distinct ' : '') . 
+			implode(',', $this->select), $this->table, $this->clause_string());
+	}
+	
+	/** Return the query as a string.
+	 *  @return string
+	 */
+	public function sql()
+	{
+		$this->init_query();
+		return 'select ' . implode(',', $this->select) . ' from ' . safe_pfx($this->table) . ' where ' . $this->clause_string();
 	}
 	
 }
@@ -513,7 +549,7 @@ class soo_txp_left_join extends soo_txp_select
 	public function sql()
 	{
 		parent::init_query();
-		return 'select ' . implode(',', $this->select) . ' from ' . self::quote($this->table) . ' as ' . self::t1 . ' left join ' . self::quote($this->left_join) . ' as ' . self::t2 . ' on ' . $this->join_on . ' where ' . $this->clause_string();
+		return 'select ' . implode(',', $this->select) . ' from ' . self::quote(safe_pfx($this->table)) . ' as ' . self::t1 . ' left join ' . self::quote(safe_pfx($this->left_join)) . ' as ' . self::t2 . ' on ' . $this->join_on . ' where ' . $this->clause_string();
 	}
 	
 	/** Return result of a SELECT COUNT(*) query
@@ -929,10 +965,6 @@ abstract class soo_html extends soo_obj
 	protected $element_name	= '';
 	/// container (false) or empty element (true)
 	protected $is_empty		= 0;
-	/// inline (false) or block (true) element
-	protected $is_block		= 0;
-	/// Allowable content elements
-	protected $can_contain	= array();
 	/// Element content array (strings or soo_html objects)
 	protected $contents		= array();
 	//@}
@@ -962,9 +994,9 @@ abstract class soo_html extends soo_obj
 	 *  @param atts Attributes (array of name=>value pairs)
 	 *  @param content Element content (string, soo_html object, or array thereof)
 	 */
-	public function __construct($element_name, $atts, $content = null)
+	public function __construct($element_name, $atts, $content = null, $is_empty = 0)
 	{
-		$this->element_name($element_name);
+		$this->element_name($element_name)->is_empty($is_empty);
 		if ( empty($atts) )
 			$atts = array();
 		foreach ( $this as $property => $value )
@@ -1004,26 +1036,15 @@ abstract class soo_html extends soo_obj
 		}
 		return $this;
 	}
-	/** Return an array of names of all allowed (X)HTML attributes.
-	 *  @return array
-	 */
-	private function html_attribute_names()
-	{
-		$not = array('element_name', 'is_empty', 'is_block', 'contents', 'can_contain');	// gotta be a better way
-		$all = $this->property_names();
-		return array_diff($all, $not);
-	}
 	
 	/** Return an attribute:value array of all (X)HTML attributes.
+	 *  Hard-coded list of excluded properties is rather lame,
+	 *  but I haven't thought of anything better yet.
 	 *  @return array
 	 */
 	private function html_attributes()
 	{
-		$out = array();
-		foreach ( $this as $property => $value )
-			if ( in_array($property, $this->html_attribute_names()) )
-				$out[$property] = $value;
-		return $out;
+		return array_diff_key($this->properties(), array_flip(array('element_name', 'is_empty', 'contents')));
 	}
 	
 	/** Create (X)HTML tag(s) string for this element.
@@ -1032,13 +1053,10 @@ abstract class soo_html extends soo_obj
 	 */
 	public function tag()
 	{
-	
 		$out = '<' . $this->element_name;
 		
-		// next block modified to deal with a PHP 5.2.0 bug fixed PHP 5.2.4 ??
-		$hidden = array('element_name', 'is_empty', 'is_block', 'contents', 'can_contain');
-		foreach ( $this->properties() as $property => $value )
-			if ( ( $value or $property == 'alt' ) and !in_array($property, $hidden) )
+		foreach ( $this->html_attributes() as $property => $value )
+			if ( $value or $property == 'alt' )
 				$out .= " $property=\"$value\"";
 		
 		if ( $this->is_empty )
@@ -1050,8 +1068,6 @@ abstract class soo_html extends soo_obj
 			
 			if ( $item instanceof soo_html )
 				$out .= $item->tag();		
-					// recursion ...
-				
 			else
 				$out .= $item;
 		
@@ -1070,7 +1086,7 @@ abstract class soo_html extends soo_obj
 	
 	private function newline()
 	{
-		return ( $this->is_block and count($this->contents) > 1 ) ? n : '';
+		return ( ! $this->is_empty and count($this->contents) > 1 ) ? n : '';
 	}
 }
 
@@ -1101,7 +1117,6 @@ class soo_html_anchor extends soo_html
 	{
 		if ( ! is_array($atts) )
 			$atts = array('href' => $atts);
-		$this->is_empty(false)->is_block(false);
 		parent::__construct( 'a', $atts, $content );
 	}
 	
@@ -1115,8 +1130,7 @@ class soo_html_br extends soo_html
 	 */
 	public function __construct ( $atts = array() )
 	{
-		parent::__construct( 'br', $atts );
-		$this->is_empty(true)->is_block(false);
+		parent::__construct('br', $atts, null, true);
 	}
 }
 
@@ -1139,7 +1153,6 @@ class soo_html_form extends soo_html
 	 */
 	public function __construct ( $init = array(), $content = '' )
 	{
-		$this->is_empty(false)->is_block(true);
 		$atts = is_string($init) ? array('action' => $init) : $init;
 		if ( ! isset($atts['method']) )
 			$atts['method'] = 'post';
@@ -1169,8 +1182,6 @@ class soo_html_label extends soo_html
 	 */
 	public function __construct ( $init = array(), $content = '' )
 	{
-		$this->is_empty(false)
-			->is_block(false);
 		if ( is_string($init) )
 			$init = array('for' => $init);
 		parent::__construct('label', $init, $content);
@@ -1215,10 +1226,8 @@ class soo_html_input extends soo_html_form_control
 	 */
 	public function __construct ( $type = 'text', $atts = array() )
 	{
-		$this->is_empty(true)
-			->is_block(false)
-			->type($type);
-		parent::__construct('input', $atts);
+		$this->type($type);
+		parent::__construct('input', $atts, null, true);
 	}
 }
 
@@ -1240,8 +1249,6 @@ class soo_html_select extends soo_html_form_control
 	 */
 	public function __construct ( $atts = array(), $content = array() )
 	{
-		$this->is_empty(false)
-			->is_block(true);
 		parent::__construct('select', $atts);
 		if ( ! is_array($content) ) $content = array($content);
 		foreach ( $content as $i => $item )
@@ -1270,8 +1277,6 @@ class soo_html_option extends soo_html_form_control
 	 */
 	public function __construct ( $atts = array(), $content = array() )
 	{
-		$this->is_empty(false)
-			->is_block(false);
 		parent::__construct('option', $atts, $content);
 	}
 }
@@ -1294,8 +1299,6 @@ class soo_html_textarea extends soo_html_form_control
 	 */
 	public function __construct ( $atts = array(), $content = '' )
 	{
-		$this->is_empty(false)
-			->is_block(false);
 		parent::__construct('textarea', $atts, $content);
 	}
 }
@@ -1339,11 +1342,8 @@ class soo_html_img extends soo_html
 		}
 		elseif ( ! is_array($init) )
 			$init['src'] = $init;
-		parent::__construct('img', $init);
 		
-		$this->is_empty(true)->is_block(false);
-//			->can_contain(array());
-		
+		parent::__construct('img', $init, null, true);
 		if ( $escape )
 			$this->html_escape('title')->html_escape('alt');
 	}
@@ -1359,9 +1359,6 @@ class soo_html_p extends soo_html
 	 */
 	public function __construct ( $atts = array(), $content = '' )
 	{
-		$this->is_empty(false)
-			->is_block(true)
-			->can_contain(array('inline'));
 		parent::__construct('p', $atts, $content);
 	}
 }
@@ -1387,11 +1384,6 @@ class soo_html_table extends soo_html
 	 */
 	public function __construct ( $atts = array(), $content = null )
 	{
-		$this->is_empty(false)
-			->is_block(true)
-			->can_contain(array('caption', 'col', 'colgroup', 
-				'thead', 'tfoot', 'tbody', 'tr'));
-			// can contain tr if only one tbody (implied) and no tfoot or thead;
 		$this->contents($content);
 		parent::__construct( 'table', $atts );
 	}
@@ -1450,9 +1442,8 @@ abstract class soo_html_table_component extends soo_html
 	 *  @param atts Attributes (array of name=>value pairs)
 	 *  @param content Element content (string, soo_html object, or array thereof)
 	 */
-	public function __construct ( $component, $atts = array(), $content = '', $is_empty = false, $is_block = true )
+	public function __construct ( $component, $atts = array(), $content = '' )
 	{
-		$this->is_empty($is_empty)->is_block($is_block);
 		parent::__construct( $component, $atts, $content );
 	}
 }
@@ -1466,7 +1457,6 @@ class soo_html_thead extends soo_html_table_component
 	 */
 	public function __construct ( $atts = array(), $content = '' )
 	{
-		$this->can_contain(array('tr'));
 		parent::__construct( 'thead', $atts, $content );
 	}
 }
@@ -1480,7 +1470,6 @@ class soo_html_tbody extends soo_html_table_component
 	 */
 	public function __construct ( $atts = array(), $content = '' )
 	{
-		$this->can_contain(array('tr'));
 		parent::__construct( 'tbody', $atts, $content );
 	}
 }
@@ -1494,7 +1483,6 @@ class soo_html_tfoot extends soo_html_table_component
 	 */
 	public function __construct ( $atts = array(), $content = '' )
 	{
-		$this->can_contain(array('tr'));
 		parent::__construct( 'tfoot', $atts, $content );
 	}
 }
@@ -1509,7 +1497,6 @@ class soo_html_tr extends soo_html_table_component
 	 */
 	public function __construct ( $atts = array(), $content = '' )
 	{
-		$this->can_contain(array('th', 'td'));
 		parent::__construct( 'tr', $atts, $content );
 	}	
 }
@@ -1535,8 +1522,6 @@ abstract class soo_html_table_cell extends soo_html_table_component
 	public function __construct ( $cell_type, $atts = array(), $content = '' )
 	{
 		parent::__construct( $cell_type, $atts, $content );		
-// 		$this->can_contain(array('caption', 'col', 'colgroup', 
-// 				'thead', 'tfoot', 'tbody'));
 	}
 }
 
@@ -1582,9 +1567,6 @@ abstract class soo_html_list extends soo_html
 	 */
 	public function __construct ( $element_name, $atts, $content, $class )
 	{
-		$this->is_empty(false)
-			->is_block(true);
-			//->can_contain(array('li'));
 		if ( ! is_array($content) )
 			$content = array($content);
 		$prev = null;
@@ -1643,7 +1625,6 @@ class soo_html_li extends soo_html
 	 */
 	public function __construct ( $atts = array(), $content = '' )
 	{
-		$this->is_empty(false)->is_block(true);
 		parent::__construct('li', $atts, $content);
 	}
 }
@@ -1657,7 +1638,6 @@ class soo_html_span extends soo_html
 	 */
 	public function __construct ( $atts = array(), $content = '' )
 	{
-		$this->is_empty(false)->is_block(false);
 		parent::__construct('span', $atts, $content);
 	}
 }
@@ -1846,7 +1826,17 @@ A support library for Textpattern plugins.
 
 h2(#history). Version history
 
+h3(#1_1_0). 1.1.0
+
+* soo_txp_select::distinct() for @SELECT DISTINCT@ queries
+
+h3(#1_1_b_2). 1.1.b.2
+
+* Bugfix: soo_txp_left_join was incompatible with database table prefixes
+
 h3(#b9). 1.1.b.1
+
+9/12/2010
 
 * New class, *soo_txp_left_join* for @SELECT ... LEFT JOIN@ queries
 * *soo_txp_upsert* new features:
