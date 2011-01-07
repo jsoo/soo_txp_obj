@@ -13,12 +13,12 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program. If not, see <a href="http://www.opensource.org/licenses/lgpl-2.1.php">http://www.opensource.org/licenses/lgpl-2.1.php</a>.</small>
  *  @author Copyright 2009&ndash;2010 <a href="http://ipsedixit.net/info/2/contact">Jeff Soo</a>
- *  @version 1.1.b.3
+ *  @version 1.1.0
  *  @sa <a href="http://ipsedixit.net/txp/21/soo-txp-obj">soo_txp_obj Developer Guide</a>
  */
 $plugin['name'] = 			'soo_txp_obj';
 $plugin['description'] = 	'Support library for Txp plugins';
-$plugin['version'] = 		'1.1.b.3';
+$plugin['version'] = 		'1.1.0';
 $plugin['author'] = 		'Jeff Soo';
 $plugin['author_uri'] = 	'http://ipsedixit.net/txp/';
 $plugin['type'] = 2; 
