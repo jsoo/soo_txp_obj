@@ -351,8 +351,8 @@ class soo_txp_select extends soo_txp_query
 	
 	/** Constructor.
 	 *  @param table Table name
-	 *  @param select item(s) to select
 	 *  @param key Optional key for selecting a single record
+	 *  @param select item(s) to select
 	 */
 	public function __construct( $table, $key = null, $select = null )
 	{
@@ -413,7 +413,19 @@ class soo_txp_select extends soo_txp_query
 		$this->init_query();
 		return 'select ' . implode(',', $this->select) . ' from ' . safe_pfx($this->table) . ' where ' . $this->clause_string();
 	}
-	
+		
+	/** Return result of a SELECT COUNT(*) query
+	 *  @int
+	 */
+	public function count()
+	{
+		$select = $this->select;
+		$this->select = array('count(*)');
+		$r = safe_query($this->sql());
+		$this->select = $select;
+		if ( $r )
+			return mysql_result($r, 0);
+	}
 }
 
 /// Class for SELECT ... LEFT JOIN queries.
@@ -550,19 +562,6 @@ class soo_txp_left_join extends soo_txp_select
 	{
 		parent::init_query();
 		return 'select ' . implode(',', $this->select) . ' from ' . self::quote(safe_pfx($this->table)) . ' as ' . self::t1 . ' left join ' . self::quote(safe_pfx($this->left_join)) . ' as ' . self::t2 . ' on ' . $this->join_on . ' where ' . $this->clause_string();
-	}
-	
-	/** Return result of a SELECT COUNT(*) query
-	 *  @int
-	 */
-	public function count()
-	{
-		$select = $this->select;
-		$this->select = array('count(*)');
-		$r = safe_query($this->sql());
-		$this->select = $select;
-		if ( $r )
-			return mysql_result($r, 0);
 	}
 }
 
@@ -1826,6 +1825,12 @@ A support library for Textpattern plugins.
 * "API Documentation":http://ipsedixit.net/api/soo_txp_obj/
 
 h2(#history). Version history
+
+h3. ???
+
+????
+
+* Moved soo_txp_left_join::count() to parent class (soo_txp_select)
 
 h3(#1_1_0). 1.1.0
 
