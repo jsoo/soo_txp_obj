@@ -13,13 +13,13 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program. If not, see <a href="http://www.opensource.org/licenses/lgpl-2.1.php">http://www.opensource.org/licenses/lgpl-2.1.php</a>.</small>
  *  @author Copyright 2009&ndash;2011 <a href="http://ipsedixit.net/info/2/contact">Jeff Soo</a>
- *  @version 1.1.0 
- *  @date Released 2011-01-07
+ *  @version 1.1.1 
+ *  @date Released 2012-01-25
  *  @sa <a href="http://ipsedixit.net/txp/21/soo-txp-obj">soo_txp_obj Developer Guide</a>
  */
 $plugin['name'] = 			'soo_txp_obj';
 $plugin['description'] = 	'Support library for Txp plugins';
-$plugin['version'] = 		'1.1.0';
+$plugin['version'] = 		'1.1.1';
 $plugin['author'] = 		'Jeff Soo';
 $plugin['author_uri'] = 	'http://ipsedixit.net/txp/';
 $plugin['type'] = 2; 
@@ -1719,12 +1719,16 @@ class soo_uri extends soo_obj
 	 */
 	private function update_from_params ( )
 	{
-		$this->query_string = http_build_query($this->query_params);
+		// htmlencode ampersands now, because some servers will anyway
+		$this->query_string = http_build_query($this->query_params, '', '&amp;');
+		
 		$this->request_uri = self::strip_query($this->request_uri) . 
 			( $this->query_string ? '?' . $this->query_string : '' );
 		$this->full = preg_replace('/\/$/', '', hu) . $this->request_uri();
-		$_SERVER['QUERY_STRING'] = $this->query_string;
-		$_SERVER['REQUEST_URI'] = $this->request_uri;
+		
+		// then htmldecode before updating the $_SERVER array
+		$_SERVER['QUERY_STRING'] = html_entity_decode($this->query_string);
+		$_SERVER['REQUEST_URI'] = html_entity_decode($this->request_uri);
 	}
 	
 	/** Remove the query string from a URI
@@ -1826,11 +1830,12 @@ A support library for Textpattern plugins.
 
 h2(#history). Version history
 
-h3. ???
+h3(#1_1_1). 1.1.1
 
-????
+2012/01/25
 
 * Moved soo_txp_left_join::count() to parent class (soo_txp_select)
+* Bugfix/update for soo_uri: ampersands now encoded/decoded appropriately
 
 h3(#1_1_0). 1.1.0
 
